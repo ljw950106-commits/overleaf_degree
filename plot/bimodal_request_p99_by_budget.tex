@@ -1,0 +1,42 @@
+% Mixed CPU Bursts: percentage change of the mean per-round p99 vs. CFS.
+% 100 untrimmed rounds; asymmetric 95% round-bootstrap confidence intervals.
+\begin{tikzpicture}
+\begin{axis}[
+ scale only axis,width=0.77\linewidth,height=2.8cm,
+ xmin=0.5,xmax=4.5,ymin=-34,ymax=13,
+ xtick={1,2,3,4},xticklabels={0--4,4--6,6--8,$\geq$8},
+ ytick={-30,-20,-10,0,10},
+ xlabel={Remaining deadline (ms)},ylabel={Request p99 change (\%)},
+ tick label style={font=\footnotesize},label style={font=\footnotesize},
+ xtick style={draw=none},ymajorgrids=true,grid style={gray!25,dashed},
+ axis x line*=bottom,axis y line*=left,axis line style={black!80,line width=0.4pt},
+]
+\addplot[gray!80!black,densely dashed,thick,mark=none] coordinates {(0.5,0) (4.5,0)};
+\addplot[ybar,bar width=6pt,bar shift=0pt,area legend,fill=linearblue,draw=black!75,line width=0.35pt] coordinates {
+ (0.86,5.857487)
+ (1.86,-15.816102)
+ (2.86,-0.815884)
+ (3.86,1.547909)
+};
+\addplot[ybar,bar width=6pt,bar shift=0pt,area legend,fill=rlnavy,draw=black!75,line width=0.35pt] coordinates {
+ (1.14,-25.333318)
+ (2.14,-18.946155)
+ (3.14,0.365824)
+ (4.14,3.675721)
+};
+% Draw asymmetric 95% CIs using the same visual style as panels (a)--(c).
+\schedCenteredErrorBar{0.86}{0pt}{3.641163}{8.128511} % mean=5.857487, CI -2.216324/+2.271024
+\schedCenteredErrorBar{1.86}{0pt}{-17.914149}{-13.515055} % mean=-15.816102, CI -2.098047/+2.301047
+\schedCenteredErrorBar{2.86}{0pt}{-1.523240}{-0.141070} % mean=-0.815884, CI -0.707356/+0.674814
+\schedCenteredErrorBar{3.86}{0pt}{0.924262}{2.184546} % mean=1.547909, CI -0.623647/+0.636637
+\schedCenteredErrorBar{1.14}{0pt}{-26.716749}{-23.831684} % mean=-25.333318, CI -1.383431/+1.501634
+\schedCenteredErrorBar{2.14}{0pt}{-20.671168}{-17.158925} % mean=-18.946155, CI -1.725013/+1.787230
+\schedCenteredErrorBar{3.14}{0pt}{-0.336804}{1.049978} % mean=0.365824, CI -0.702628/+0.684154
+\schedCenteredErrorBar{4.14}{0pt}{2.479253}{5.376186} % mean=3.675721, CI -1.196468/+1.700465
+% RL-SchedExt percentage labels; negative denotes improvement.
+\node[font=\scriptsize,text=deadlineChangeRed,anchor=north,inner sep=1pt] at (axis cs:1.14,-27.0) {$-25.3\%$};
+\node[font=\scriptsize,text=deadlineChangeRed,anchor=north,inner sep=1pt] at (axis cs:2.14,-21.0) {$-18.9\%$};
+\node[font=\scriptsize,text=deadlineChangeRed,anchor=south,inner sep=1pt] at (axis cs:3.14,2.1) {$+0.4\%$};
+\node[font=\scriptsize,text=deadlineChangeRed,anchor=south,inner sep=1pt] at (axis cs:4.14,6.0) {$+3.7\%$};
+\end{axis}
+\end{tikzpicture}

@@ -1,0 +1,422 @@
+% -*- TeX:UTF-8 -*-
+%%
+%% KAIST 학위논문양식 LaTeX용 (ver 0.5) 예시
+%%
+%% @version 0.4
+%% @author  채승병 Chae,Seungbyung (mailto:chess@kaist.ac.kr)
+%% @date    2004. 11. 12.
+%%
+%% @requirement
+%% teTeX, fpTeX, teTeX 등의 LaTeX2e 배포판
+%% + 은광희 님의 HLaTeX 0.991 이상 버젼 또는 홍석호 님의 HPACK 1.0
+%% : 설치에 대한 자세한 정보는 http://www.ktug.or.kr을 참조바랍니다.
+%%
+%% @note
+%% 기존에 널리 쓰여오던 차재춘 님의 학위논문양식 클래스 파일의 형식을
+%% 따르지 않고 전면적으로 다시 작성하였습니다. 논문 정보 입력부분에서
+%% 과거 양식과 다른 부분이 많으니 아래 예시에 맞춰 바꿔주십시오.
+%%
+%%
+%% @acknowledgement
+%% 본 예시 논문은 물리학과 박사과정 김용현 님의 호의로 제공되었습니다.
+%%
+%% -------------------------------------------------------------------
+%% @information
+%% 이 예제 파일은 hangul-ucs를 사용합니다. UTF-8 입력 인코딩으로
+%% 작성되었습니다. hlatex의 hfont는 이용하지 않습니다. --2006/02/11
+%% 본 템플릿은 전산학부 김민혁 교수에의해서 버그 수정되었습니다. -- 2016/11/25
+
+% @class kaist.cls
+% @options [default: doctor, korean, final]
+% - doctor: 박사과정 | master : 석사과정
+% - korean: 한글논문 | english: 영문논문
+% - final : 최종판   | draft  : 시험판
+% - pdfdoc : 선택하지 않으면 북마크와 colorlink를 만들지 않습니다.
+
+
+\documentclass[master,english,final]{kaist-ucs}
+
+
+% If you want make pdf document (include bookmark, colorlink)
+%\documentclass[doctor,english,final,pdfdoc]{kaist-ucs}
+
+% kaist.cls 에서는 기본으로 dhucs, ifpdf, graphicx 패키지가 로드됩니다.
+% 추가로 필요한 패키지가 있다면 주석을 풀고 적어넣으십시오,
+%\usepackage{...}
+\usepackage{comment}
+\usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{caption}
+
+\makeatletter
+\providecommand{\bstctlcite}[1]{%
+  \@bsphack
+  \@for\@citeb:=#1\do{%
+    \edef\@citeb{\expandafter\@firstofone\@citeb}%
+    \if@filesw
+      \immediate\write\@auxout{\string\citation{\@citeb}}%
+    \fi
+  }%
+  \@esphack
+}
+\makeatother
+
+% @command title 논문 제목(title of thesis)
+% @options [default: (none)]
+% - korean: 한글제목(korean title) | english: 영문제목(english title)
+\title[korean] {GPU 대역폭 확장을 위한 \linebreak HBM 다이 간(Die-to-Die) 인터커넥트}
+\title[english]{Memory-Fabric: HBM Die-to-Die Interconnect \linebreak for GPU Bandwidth Expansion}
+
+% @note 표지에 출력되는 제목을 강제로 줄바꿈하려면 \linebreak 을 삽입.
+%       \\ 나 \newline 등을 사용하면 안됩니다. (아래는 예시)
+%
+%\title[korean]{탄소 나노튜브의 물리적 특성에 대한\linebreak 이론 연구}
+%\title[english]{Theoretical study on physical properties of\linebreak
+%                carbon nanotubes}
+%
+% If you want to begin a new line in cover, use \linebreak .
+% See examples above.
+%
+
+
+% @command author 저자 이름
+% @param   family_name, given_name 성, 이름을 구분해서 입력
+% @options [default: (none)]
+% - korean: 한글이름 | chinese: 한문이름 | english: 영문이름
+% 한문 이름이 없다면 빈 칸으로 두셔도 됩니다.
+%
+%
+% If you are a foreigner , write your name in korean or your korean name.
+% If you can't write native character, you can make the chinese blank empty 
+% Write as follow
+% \author[korean]{family name in korean}{given name in korean}
+% \author[chinese]{family name in your native language}{given name in your native language}
+% \author[english]{family name in english}{given name in english}
+%
+\author[korean]{이}{재 원}
+\author[korean2]{이}{재원}    %이름을 붙여 써 주시기 바랍니다.
+\author[chinese]{李}{載遠}
+\author[english]{Lee}{Jaewon}
+
+% @command advisor 지도교수 이름 (복수가능)
+% @usage   \advisor[options]{...한글이름...}{...영문이름...}{signed|nosign}
+% @options [default: major]
+% - major: 주 지도교수  | coopr: 공동 지도교수
+\advisor[major]{원 유 집}{Youjip Won}{signed}
+\advisor[major2]{원유집}{Youjip Won}{signed}    %한글 성과 한글 이름을 모두 붙여 써 주시기 바랍니다.
+\advisorinfo{Professor of Graduate School of System Architect} %제출승인서에 들어가는 교수님 정보, advisor's information 
+%\advisor[coopr]{김 동 준}{Dongjun Kim}{nosign}
+%\advisor[coopr2]{김동준}{Dongjun Kim}{nosign}    %한글 성과 한글 이름을 모두 붙여 써 주시기 바랍니다.
+%
+% 지도교수 한글이름은 입력하지 않아도 됩니다.
+% You may not input advisor's korean name
+% like this \advisor[major]{}{Chang, Kee Joo}{signed}
+%
+
+
+% @command department {학과이름}{학위종류} - 아래 규칙에 따라 코드를 입력
+% @command department {department code}{degree field}
+%
+% department code
+% 2. 석박사학위논문 작성 및 제출요령 4쪽 ~ 5쪽 참고
+% 또는 kaist-ucs.cls 의 % @command department 참고
+
+% science: 이학 | engineering: 공학 | business : 경영학
+% 박사논문의 경우는 학위종류를 입력하지 않아도 됩니다.
+% If you write Ph.D. dissertation, you cannot input degree field.
+% The third parameter : a | b | c
+% a: 소속된 학과만 쓰는 옵션 (학과에만 소속되어 있는 경우에는 무조건 a를 선택해야 함)
+% b: 학과 아래의, 프로그램이나 학제전공에 소속되어 있을 경우에 학과와 프로그램을 함께 쓰는 옵션
+% c: 학과 아래의, 프로그램이나 학제전공에 소속되어 있을 경우에 학과를 쓰지 않고 프로그램이나 학제전공의 이름만 쓰는 옵션 
+% 
+% a: it represents only the name of department. (if you aren't in the program under the department, must choose a)
+% b: it represents the names of department and the program that is under the department (consider this when you are in the program not only department)
+% c: it represents only the name of program that is under the department (consider this when you are in the program not only department)
+\department{SA}{engineering}{a}
+
+% @command referee 심사위원 (석사과정 3인, 박사과정 5인)
+\referee[1]{원 유 집}
+\referee[2]{신 인 식}
+\referee[3]{권 영 진}
+% \referee[5] {Barack Obama}
+% Of course english name is available
+
+% @command approvaldate 지도교수논문승인일
+% @param   year,month,day 연,월,일 순으로 입력
+\approvaldate{2026}{6}{1}
+
+% @command refereedate 심사위원논문심사일
+% @param   year,month,day 연,월,일 순으로 입력
+\refereedate{2026}{6}{1}
+
+% @command gradyear 졸업년도
+\gradyear{2026}
+
+% 본문 시작
+\begin{document}
+\bstctlcite{IEEEexample:BSTcontrol}
+
+    % 앞표지, 속표지, 학위논문 제출승인서, 학위논문 심사완료 검인서는
+    % 클래스 옵션을 final로 지정해주면 자동으로 생성되며,
+    % 반대로 옵션을 draft로 지정해주면 생성되지 않습니다.
+
+    % 논문 서지, 초록, 핵심 낱말, 영문 초록, 영어 핵심 낱말 (Information of thesis, abstract in korean, keywords in korean, abstract in english, keywords in english)
+   \thesisinfo
+   %% Letters of abstract in korean must be less than 500 and words of abstract in english must be less than 300.
+   %% Number of keywords must be less than 6.
+   %% Don't write english letters in the abstract in korean.
+    \begin{summary}      
+    메모리 대역폭은 여전히 고성능 GPU 시스템의 주요 병목으로 남아 있다. 이를 완화하기 위해 최신 GPU는 고대역폭 메모리(HBM) 스택의 수와 내부 메모리 대역폭을 지속적으로 증가시키고 있다. 그러나 HBM 내부 대역폭이 증가함에 따라, GPU와 HBM을 연결하는 다이-투-다이(D2D) 인터페이스가 새로운 대역폭 병목으로 부상하고 있다. 본 논문에서는 이러한 병목을 완화하기 위해 HBM shoreline에서 새로운 아키텍처적 기회를 식별하고, 활용되지 않는 메모리 shoreline을 이용하여 HBM들을 직접 연결하는 인패키지 메모리 패브릭, Memory-Fabric을 제안한다. 제안 구조는 HBM 간 D2D 링크를 통해 패키징 제약을 크게 변경하지 않으면서 GPU 내부의 유효 대역폭을 확장한다. 특히 멀티칩렛 GPU에서 GPU 간 이분 대역폭(bisection bandwidth)의 한계를 완화하고, HBM 경로 다양성을 활용하여 메모리 집약적 트래픽을 보다 효율적으로 분산시킨다. 또한 HBM들이 직접 연결됨에 따라, 데이터 이동이 반드시 GPU를 경유하지 않아도 되는 새로운 실행 경로가 가능해진다. 이를 지원하기 위해 본 논문은 HBM 베이스 다이에 통합되는 근접 메모리 데이터 이동 엔진(Data Movement Engine, DME)을 제안한다. DME는 Memory-Fabric의 추가 대역폭을 활용하여 HBM 간 데이터 이동을 오프로딩함으로써 GPU-mediated copy로 인한 대역폭 소모와 데이터 이동 오버헤드를 줄인다. 본 논문은 Memory-Fabric을 구현하기 위해 필요한 HBM 베이스 다이의 구조적 변경과, 데이터 이동 오프로딩을 위한 소프트웨어 인터페이스를 함께 제시한다. 평가 결과, Memory-Fabric 기반 시스템은 추가적인 대역폭과 HBM 경로 다양성을 활용하여 메모리 집약적 워크로드의 성능을 42\% 향상시키며, 데이터 이동 오프로딩을 통해 MoE 워크로드의 성능을 36\% 향상시킨다.
+
+    \end{summary}
+   
+    \begin{Korkeyword}
+    GPU, HBM, 메모리, 인터커넥트
+    \end{Korkeyword}
+
+
+    \begin{abstract}
+    As memory bandwidth continues to be a major bottleneck, high-performance architectures such as GPUs maximize the number of high-bandwidth memory (HBM) modules that are attached; however, as internal HBM memory bandwidth continues to increase, the GPU-to-HBM interface is becoming the bandwidth bottleneck. In this work, to address the need for more bandwidth, we identify a new architectural opportunity from the memory or HBM shoreline to enable additional bandwidth within a GPU system. In particular, we propose exploiting  un-utilized memory shoreline to directly interconnect the HBMs together and create an in-package memory fabric built on D2D interconnects. We show how the memory fabric can effectively expand bandwidth within a GPU -- both memory bandwidth and GPU bisection bandwidth. We show how the memory fabric increases GPU bisection bandwidth without modifying packaging constraints and mitigates the bisection bandwidth limitations of multi-chiplet GPU architectures. In addition, since HBMs are directly interconnected, we show how the HBMs can communicate and transfer data without routing through the GPU. To support direct communication, we introduce a near-memory data-movement engine (DME) that reduces data-movement overhead by exploiting the memory fabric’s bandwidth. We describe the architectural changes to the HBM base die to enable the memory fabric and the software interface to enable offloading of communication to the memory fabric.  By exploiting the additional bandwidth and the HBM path diversity provided, memory-fabric based system can improve memory-intensive workloads by 42\% while accelerating MoE workloads by 36\% offloading data movement.
+    \end{abstract} 
+     
+    \begin{Engkeyword}
+    GPU, HBM, Memory, Interconnect
+    \end{Engkeyword}
+   
+
+    \addtocounter{pagemarker}{1}                 % 백색별지분을 고려
+    \newpage 
+  
+
+
+    % % 목차 (Table of Contents) 생성
+    % \tableofcontents
+
+    % % 표목차 (List of Tables) 생성
+    % \listoftables
+
+    % % 그림목차 (List of Figures) 생성
+    % \listoffigures
+
+    % 위의 세 종류의 목차는 한꺼번에 다음 명령으로 생성할 수도 있습니다.
+    %\makecontents
+
+%% 이하의 본문은 LaTeX 표준 클래스 report 양식에 준하여 작성하시면 됩니다.
+%% 하지만 part는 사용하지 못하도록 제거하였으므로, chapter가 문서 내의
+%% 최상위 분류 단위가 됩니다.
+%% You cannot use 'part'
+
+\chapter{Introduction}
+\input{introduction}
+
+\chapter{Background}
+\input{background}
+
+\chapter{System Design}
+\input{system_design}
+
+\chapter{Implement}
+\input{implement}
+
+\chapter{Evaluation}
+\input{evaluation}
+
+\chapter{Discussion and Conclusion}
+\input{discussion}
+\input{conclusion}
+
+
+% \section{Quantum Communication}
+
+% There have been extensive studies on cognitive radio in recent years. To enhance the performance gain of original cognitive radio networks (CRNs), leveraging cooperative diversity has attracted a lot of attention \cite{SOCA1}...
+
+% \subsection{Examples}
+
+
+% \section{Applications of Quantum Communication}
+
+% Despite its potential to improve the throughput, spatial domain diversity was not fully considered in the studies of original CCRNs. Utilizing the spatial domain for the communications, the concept of MIMO has been adopted in many cases to increase the wireless capacity \cite{EF1,FD2}...
+
+
+% \chapter{Proposed Architecture and Its Application}
+
+% \section{Proposed Architecture}
+
+% Let us consider an MIMO-CCRN with one PL and one SL. Each PU has one legacy antenna and each SU has two STAR antennas. The duration of one communication time frame is divided into two phases \cite{RVP2,ML2} ...
+%%
+%% 표 삽입 예시
+%% Example. how to insert table
+%%
+% \begin{table}[t]
+% \caption[Enter the caption title here]{Energy stability $E$ (eV) per molecule of all meta-stable
+% isomer states of C$_{60}$ opening process for forming the (5,5) cap.
+% In the SW-I and SW-II, both ferromagnetic (Ferro) and paramagnetic (Para)
+% spin configurations are obtained, whereas only non-magnetic configuration
+% is obtained in the BF, SW-III, and CAP(5,5).
+% $M$ is total magnetization $n_{\rm up}$-$n_{\rm down}$ in unit of $\mu_B$, where
+% $n_{\rm up(down)}$ is the number of up (down) spins.
+% }
+% \label{mag-tab1}
+% \begin{center}
+% \begin{tabular} {ccccccccccc}
+% \hline\hline
+% & & BF &\multicolumn{2}{c}{SW-I}&&\multicolumn{2}{c}{SW-II}&SW-III&CAP&\\
+% \cline{4-5} \cline{7-8}
+% &               &   &  Para & Ferro &&   Para &  Ferro &      &      &\\
+% \hline
+% & $E$ (eV)      & 0 & 7.796 & 7.832 && 10.418 & 10.408 & 11.5 & 13.2 &\\
+% & $M$ ($\mu_B$) & 0 &     0 &  1.94 &&      0 &   2.06 &    0 &    0 &\\
+% \hline\hline
+% \end{tabular}
+% \end{center}
+% \end{table}
+
+%%
+%% 그림 삽입 예시
+%% Example. how to insert graph
+%%
+%% Note. 가급적 \includegraphics 명령을 사용하십시오.
+%% Recommen : Use \includegraphics to insert graph.
+%%
+% \begin{figure}[t]
+%     \centerline{\includegraphics[width=12.5cm]{sample-fig1}}
+%     \caption[Enter the caption title here]{ Ball-and-stick models of meta-stable isomers in
+%         cage opening process from a C$_{60}$ buckminsterfullerene
+%         to a (5,5) capsule. We name them BF and CAP(5,5).
+%         Depending on the number of the Stone-Wales (SW) transformation,
+%         we call the intermediate isomers with SW-I, SW-II, and SW-III.
+%         Highlighted atoms are undercoordinated except BF.
+%     } \label{mag-fig1}
+% \end{figure}
+
+% \section{Application}
+
+% The achievable rates can be calculated by finding the statistics of the five signals transmitted that maximize the mutual information between $s_{t,XY}$ and $y_{t,XY}$ for $(X,Y)=(T,C), (C,N)$, and $(N,C)$ when $t=1$, and $(X,Y)=(C,R), (C,N)$, and $(N,C)$ when $t=2$ \cite{SOCA2,EF2}...
+
+
+% \chapter{Concluding Remark}
+
+% We have proposed a novel FD MIMO-CCRN framework providing a reasonable performance improvement compared with the conventional MIMO-CCRN framework...
+%%
+%% 참고문헌 시작
+%% bibliography
+%% It can be changed but should include sufficient information.
+
+\bibliographystyle{IEEEtran}
+\bibliography{reference}
+
+% \begin{thebibliography}{00}
+
+% \bibitem{FD1} 박상우, \underline{동시 송수신 안테나를 두 개 쓰는 협력 인지 무선통신망에 알맞은 전 이중 통신}, 한국과학기술원 석사 학위 논문, 2016.
+
+% \bibitem{RVP1} 송익호, 박철훈, 김광순, 박소령, \underline{확률변수와 확률과정}, 자유아카데미, 2014.
+
+% \bibitem{ML1} 송익호, 안태훈, 민황기, \underline{인지 무선에서의 광대역 주파수 검출 방법 및 장치}, 특허등록번호 10-1494966, 2015년 2월 12일.
+
+% \bibitem{SOCA1} 호우위시, 이원주, 이승원, 안태훈, 이선영, 민황기, 송익호, “선형 판별 분석에서 부류안 분산 행렬의 영 공간 재공식화,” \underline{한국통신학회 2012년도 추계종합학술발표회}, 대한민국 고려대학교, 242-243쪽, 2012년 11월.
+
+% \bibitem{EF1} 민황기, 안태훈, 이승원, 이성로, 송익호, “비간섭 전력 부하 감시용 고차 적률 특징을 갖는 전력 신호 인식,” \underline{한국통신학회논문지}, 제39C권, 제7호, 608-614쪽, 2014년 7월.
+
+
+
+% \bibitem{FD2} S. Park, \textit{Full-Duplex Communication for Cooperative Cognitive Radio Networks with Two Simultaneous Transmit and Receive Antennas}, Master Thesis, Korea Adv. Inst. Science, Techn., Daejeon, Republic of Korea, 2016.
+
+% \bibitem{RVP2}  I. Song, J. Bae, and S. Y. Kim, \textit{Advanced Theory of Signal Detection: Weak Signal Detection in Generalized Observations}, Springer-Verlag, 2002.
+
+% \bibitem{ML2} I. Song, T. An, and J. Oh, \textit{Near ML decoding method based on metric-first search and branch length threshold,} registration no. US 8018828 B2, Sep. 13, 2011, USA. 
+
+% \bibitem{SOCA2} H.-K. Min, T. An, S. Lee, and I. Song, “Non-intrusive appliance load monitoring with feature extraction from higher order moments,” in \textit{Proc. 6th IEEE Int. Conf. Service Oriented Computing, Appl.,} Kauai, HI, USA, pp. 348-350, Dec. 2013.
+
+% \bibitem{EF2} I. Song and S. Lee, “Explicit formulae for product moments of multivariate Gaussian random variables,” \textit{Statistics, Probability Lett.,} vol. 100, pp. 27-34, May 2015.
+
+
+% \end{thebibliography}
+
+
+
+%%
+%% 감사의 글 시작
+%% Acknowledgement
+%%
+% @command acknowledgement 감사의글
+% @options [1 | 2 | 3 |4 ]
+% - 1 : 본문과 감사의 글이 둘 다 한글일 때  | 2 : 본문은 한글인데 감사의 글이 영어일 때 | 3 :  본문과 감사의 글이 둘 다 영어일 때  | 4 : 본문은 영어인데 감사의 글이 % 한글일 때 
+%% It is optional.
+
+\acknowledgment[4]
+
+%%
+%% 약력 시작
+%% Curriculum Vitae
+%%
+% @command curriculumvitae 이력서
+% @options [1 | 2 | 3 |4 ]
+% - 1 : 본문과 약력이 둘 다 한글일 때  | 2 : 본문은 한글인데 약력이 영어일 때 | 3 :  본문과 약력이 둘 다 영어일 때  | 4 : 본문은 영어인데 약력이 한글일 때 
+%% It is optional and you can change form of this in the class file if you want.
+\curriculumvitae[4]
+
+    % @environment personaldata 개인정보
+    % @command     name         이름
+    %              dateofbirth  생년월일
+    %              birthplace   출생지
+    %              domicile     본적지
+    %              address      주소지
+    %              email        E-mail 주소
+    % - 위 6개의 기본 필드 중에 이력서에 적고 싶은 정보를 입력
+    % input data only you want
+    \begin{personaldata}
+        \name       {안 효 원}
+        \dateofbirth{1986}{01}{30}
+        \birthplace {대한민국 서울}
+        \address    {경기도 수원시 영통구 덕영대로 1462-14}
+    \end{personaldata}
+
+    % @environment education 학력
+    % @options [default: (none)] - 수학기간을 입력
+    \begin{education}
+        \item[2001. 3.\ --\ 2004. 2.] 속초고등학교
+        \item[2004. 2.\ --\ 2012. 8.] 고려대학교 전기전자전파공학부 (학사)        
+        \item[2025. 3.\ --\ 2026. 8.] 한국과학기술원 시스템아키텍트대학원 (석사)
+    \end{education}
+
+    % @environment career 경력
+    % @options [default: (none)] - 해당기간을 입력
+    \begin{career}
+        \item[2012. 7.\ --\ 2025. 2.] 삼성전자        
+    \end{career}
+
+    % @environment activity 학회활동
+    % @options [default: (none)] - 활동내용을 입력
+%%    \begin{activity}
+%%        \item J. Choi, \textbf{Yong-Hyun Kim}, K.J. Chang, and D. Tomanek,
+%%             \textit{Occurrence of itinerant ferromagnetism in C/BN superlattice
+%%             nanotubes}, 5th Asian Workshop on First-Principles Electronic
+%%             Structure Calculations, Seoul (Korea), October., 2002.
+%%    \end{activity}
+
+    % @environment publication 연구업적
+    % @options [default: (none)] - 출판내용을 입력
+%     \begin{publication}
+%         %\item \textbf{Yong-Hyun Kim}, J. Choi, K.J. Chang, and D. Tomanek,
+%         %     \textit{Magnetic instability in partly opened C$_{60}$ isomers},
+%         %     in preparation.
+%         \item {\bf 안효원}, 이재원, 하승수, 박진우, 이현이, 정지영,
+% ``이종 칩렛 시스템을 위한 강화학습 기반 메모리 중심 배치 및 라우팅 최적화,"
+% \textit{대한전자공학회 하계종합학술대회}, 2026 (to be published).
+%         \item {하승수*, \bf 안효원}*,
+% ``SPHBM 기반 메모리 대역폭 및 용량 확장 패키지 구조,"
+% \textit{대한전자공학회 하계종합학술대회}, 2026 (to be published).
+%         \item Junho Park, {\bf Hyowon An}, Haeseok Suh, Youngsu Yoon, Hyuni Lee and Joungho Kim,
+% ``HBM-HBF-Centric Memory Pooling Architecture with Custom Base Die for Terabyte-Scale LLM Inference," in 
+% \textit{IEEE Computer Architecture Letters (CAL)}, 2026 (to be published).
+%         \item Hyuni Lee, Haeyeon Kim, JungHyun Lee, Inyoung Choi, Jaehun Lee, {\bf Hyowon An}, Chaemin Yang, and Joungho Kim,
+% ``Mem-Village: A Hybrid HBF-HBM Architecture on Glass for Ultra-Scale AI Inference Systems," in 
+% \textit{2025 IEEE Electrical Design of Advanced Packaging and Systems (EDAPS)}, 2025, pp. 1-3.
+% \end{publication}
+
+  \label{paperlastpagelabel}     % <-- 추가 부분: 마지막 페이지 위치 지정	
+%% 본문 끝
+\end{document}

@@ -1,0 +1,32 @@
+\begin{tikzpicture}
+\begin{axis}[
+  width=\linewidth, height=4cm,
+  ymin=0, ymax=42,
+  xmin=0.45, xmax=2.55,
+  xtick={1,2},
+  xticklabels={CFS,RL-SchedExt},
+  ytick={0,10,20,30,40},
+  ylabel={FPS},
+  tick label style={font=\scriptsize},
+  ylabel style={font=\scriptsize, yshift=-3pt},
+  yticklabel style={text width=1.2em, align=right},
+  xtick style={draw=none},
+  ymajorgrids=true, xmajorgrids=false,
+  grid style={dashed, gray!35},
+  axis x line*=bottom, axis y line*=left,
+  axis line style={black!80, line width=0.5pt},
+  nodes near coords,
+  every node near coord/.append style={font=\scriptsize, text=black, anchor=south, yshift=0.5pt},
+  point meta=explicit symbolic,
+  clip=false,
+]
+\addplot[ybar, bar shift=0pt, bar width=17pt, draw=black!75, line width=0.4pt, fill=cfsgray]
+  coordinates {(1,26.474) [26.47]};
+\addplot[ybar, bar shift=0pt, bar width=17pt, draw=black!75, line width=0.4pt, fill=rlnavy]
+  coordinates {(2,29.617) [29.62]};
+
+% 상대 개선율 표시 (29.62 라벨 위쪽에 배치)
+\node[anchor=south, yshift=9.5pt, font=\scriptsize, text=rlnavy]
+  at (axis cs:2,29.617) {$\uparrow$11.9\%};
+\end{axis}
+\end{tikzpicture}

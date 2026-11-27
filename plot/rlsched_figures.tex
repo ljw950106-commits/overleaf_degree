@@ -1,0 +1,164 @@
+\begin{figure*}[t]
+\centering
+{\footnotesize
+\tikz[baseline=-0.5ex]\draw[fill=cfsgray,draw=black!75] (0,0) rectangle (0.22,0.13);~CFS\quad
+\tikz[baseline=-0.5ex]\draw[fill=linearblue,draw=black!75] (0,0) rectangle (0.22,0.13);~Linear\quad
+\tikz[baseline=-0.5ex]\draw[fill=rlnavy,draw=black!75] (0,0) rectangle (0.22,0.13);~RL-SchedExt
+}\par\smallskip
+\captionsetup[subfigure]{font=footnotesize,skip=3pt}
+\begin{subfigure}[b]{0.249\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  schedWide,
+  xticklabels={Mixed,Lock,Transition},
+  xlabel={Workload},
+  ymax=92,
+  ylabel={Count},
+]
+\addplot+[ybar, mark=none, bar shift=-7pt, bar width=6pt, draw=black!75, line width=0.35pt, fill=cfsgray]
+  coordinates {
+    (1,58.52)
+    (2,59.68)
+    (3,46.12)
+  };
+\addplot+[ybar, mark=none, bar shift=0pt, bar width=6pt, draw=black!75, line width=0.35pt, fill=linearblue]
+  coordinates {
+    (1,56.58)
+    (2,55.34)
+    (3,42.18)
+  };
+\addplot+[ybar, mark=none, bar shift=7pt, bar width=6pt, draw=black!75, line width=0.35pt, fill=rlnavy]
+  coordinates {
+    (1,47.19)
+    (2,43.67)
+    (3,35.70)
+  };
+% Draw SD bars at the physical center of each shifted bar.
+\schedCenteredErrorBar{1}{-7pt}{55.360000}{61.680000} % mean=58.52, SD=3.16
+\schedCenteredErrorBar{2}{-7pt}{55.660000}{63.700000} % mean=59.68, SD=4.02
+\schedCenteredErrorBar{3}{-7pt}{42.620000}{49.620000} % mean=46.12, SD=3.50
+\schedCenteredErrorBar{1}{0pt}{53.110000}{60.050000} % mean=56.58, SD=3.47
+\schedCenteredErrorBar{2}{0pt}{51.970000}{58.710000} % mean=55.34, SD=3.37
+\schedCenteredErrorBar{3}{0pt}{38.370000}{45.990000} % mean=42.18, SD=3.81
+\schedCenteredErrorBar{1}{7pt}{44.610000}{49.770000} % mean=47.19, SD=2.58
+\schedCenteredErrorBar{2}{7pt}{40.090000}{47.250000} % mean=43.67, SD=3.58
+\schedCenteredErrorBar{3}{7pt}{31.470000}{39.930000} % mean=35.70, SD=4.23
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=0pt]axis cs:1,62.450) {$\,\downarrow3.3\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=0pt]axis cs:2,61.110) {$\,\downarrow7.3\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=0pt]axis cs:3,48.390) {$\,\downarrow8.5\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=7pt]axis cs:1,52.170) {$\,\downarrow19.4\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=7pt]axis cs:2,49.650) {$\,\downarrow26.8\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=7pt]axis cs:3,42.330) {$\,\downarrow22.6\%$};
+\end{axis}
+\end{tikzpicture}
+\caption{Deadline miss}
+\label{fig:sched-deadline}
+\end{subfigure}%
+\begin{subfigure}[b]{0.249\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  schedWide,
+  xticklabels={Mixed,Lock,Transition},
+  xlabel={Workload},
+  ymax=148,
+  ylabel={ms},
+]
+\addplot+[ybar, mark=none, bar shift=-7pt, bar width=6pt, draw=black!75, line width=0.35pt, fill=cfsgray]
+  coordinates {
+    (1,87.54)
+    (2,95.83)
+    (3,53.44)
+  };
+\addplot+[ybar, mark=none, bar shift=0pt, bar width=6pt, draw=black!75, line width=0.35pt, fill=linearblue]
+  coordinates {
+    (1,96.01)
+    (2,89.72)
+    (3,57.26)
+  };
+\addplot+[ybar, mark=none, bar shift=7pt, bar width=6pt, draw=black!75, line width=0.35pt, fill=rlnavy]
+  coordinates {
+    (1,83.60)
+    (2,77.33)
+    (3,50.72)
+  };
+% Draw SD bars at the physical center of each shifted bar.
+\schedCenteredErrorBar{1}{-7pt}{82.570000}{92.510000} % mean=87.54, SD=4.97
+\schedCenteredErrorBar{2}{-7pt}{87.310000}{104.350000} % mean=95.83, SD=8.52
+\schedCenteredErrorBar{3}{-7pt}{47.110000}{59.770000} % mean=53.44, SD=6.33
+\schedCenteredErrorBar{1}{0pt}{88.830000}{103.190000} % mean=96.01, SD=7.18
+\schedCenteredErrorBar{2}{0pt}{81.360000}{98.080000} % mean=89.72, SD=8.36
+\schedCenteredErrorBar{3}{0pt}{51.030000}{63.490000} % mean=57.26, SD=6.23
+\schedCenteredErrorBar{1}{7pt}{76.740000}{90.460000} % mean=83.60, SD=6.86
+\schedCenteredErrorBar{2}{7pt}{68.990000}{85.670000} % mean=77.33, SD=8.34
+\schedCenteredErrorBar{3}{7pt}{43.800000}{57.640000} % mean=50.72, SD=6.92
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=0pt]axis cs:1,106.790) {$\,\uparrow9.7\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=0pt]axis cs:2,101.680) {$\,\downarrow6.4\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=0pt]axis cs:3,67.090) {$\,\uparrow7.1\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=7pt]axis cs:1,94.060) {$\,\downarrow4.5\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=7pt]axis cs:2,89.270) {$\,\downarrow19.3\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=7pt]axis cs:3,61.240) {$\,\downarrow5.1\%$};
+\end{axis}
+\end{tikzpicture}
+\caption{Overrun}
+\label{fig:sched-overrun}
+\end{subfigure}%
+\begin{subfigure}[b]{0.249\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  schedWide,
+  xticklabels={Mixed,Lock,Transition},
+  xlabel={Workload},
+  ymax=13.6,
+  ylabel={ms},
+]
+\addplot+[ybar, mark=none, bar shift=-7pt, bar width=6pt, draw=black!75, line width=0.35pt, fill=cfsgray]
+  coordinates {
+    (1,9.808)
+    (2,7.903)
+    (3,6.433)
+  };
+\addplot+[ybar, mark=none, bar shift=0pt, bar width=6pt, draw=black!75, line width=0.35pt, fill=linearblue]
+  coordinates {
+    (1,9.953)
+    (2,7.882)
+    (3,6.606)
+  };
+\addplot+[ybar, mark=none, bar shift=7pt, bar width=6pt, draw=black!75, line width=0.35pt, fill=rlnavy]
+  coordinates {
+    (1,10.015)
+    (2,7.879)
+    (3,6.654)
+  };
+% Draw SD bars at the physical center of each shifted bar.
+\schedCenteredErrorBar{1}{-7pt}{9.715000}{9.901000} % mean=9.808, SD=0.093
+\schedCenteredErrorBar{2}{-7pt}{7.735000}{8.071000} % mean=7.903, SD=0.168
+\schedCenteredErrorBar{3}{-7pt}{6.191000}{6.675000} % mean=6.433, SD=0.242
+\schedCenteredErrorBar{1}{0pt}{9.832000}{10.074000} % mean=9.953, SD=0.121
+\schedCenteredErrorBar{2}{0pt}{7.671000}{8.093000} % mean=7.882, SD=0.211
+\schedCenteredErrorBar{3}{0pt}{6.406000}{6.806000} % mean=6.606, SD=0.200
+\schedCenteredErrorBar{1}{7pt}{9.851000}{10.179000} % mean=10.015, SD=0.164
+\schedCenteredErrorBar{2}{7pt}{7.663000}{8.095000} % mean=7.879, SD=0.216
+\schedCenteredErrorBar{3}{7pt}{6.419000}{6.889000} % mean=6.654, SD=0.235
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=0pt]axis cs:1,10.174) {$\,\uparrow1.5\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=0pt]axis cs:2,8.193) {$\,\downarrow0.3\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=0pt]axis cs:3,6.906) {$\,\uparrow2.7\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=7pt]axis cs:1,10.279) {$\,\uparrow2.1\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=7pt]axis cs:2,8.195) {$\,\downarrow0.3\%$};
+\node[font=\scriptsize, text=deadlineChangeRed, anchor=west, rotate=82, inner sep=0pt] at ([xshift=7pt]axis cs:3,6.989) {$\,\uparrow3.4\%$};
+\end{axis}
+\end{tikzpicture}
+\caption{Request p99}
+\label{fig:sched-p99}
+\end{subfigure}%
+\begin{subfigure}[b]{0.249\textwidth}
+\centering
+\raisebox{-2mm}{\input{plot/bimodal_request_p99_by_budget.tex}}
+\caption{Mixed p99 change}
+\label{fig:bimodal-p99-budget}
+\end{subfigure}
+\caption{Microbenchmark results on Pixel CPU7. Panels (a)--(c) compare Mixed CPU Bursts (Mixed), Lock Dependency (Lock), and Workload Transition (Transition) using 90 of 100 runs after metric-wise two-sided trimming. Error bars in (a)--(c) denote sample standard deviations. Red arrows indicate changes relative to CFS. Panel (d) compares p99 by initial deadline budget in Mixed CPU Bursts using all 100 runs; the dashed line is CFS (0\%), and error bars denote bootstrap 95\% confidence intervals. Negative changes indicate lower latency.}
+\label{fig:sched-microbenchmark}
+\end{figure*}

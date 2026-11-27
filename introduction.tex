@@ -1,0 +1,101 @@
+{\color{blue} 1차 수정 완료 v0.1}
+
+{\color{blue} CFS가 deadline urgency task 대신 다른 task 수행하는 사례 첨부하면 좋음}
+\section{Motivation and Challenges}
+Modern Android 시스템에서는 interactive applications, multimedia processing,백그라운드 연산 등 다양한 특성을 가진 Workload가 제한된 CPU 자원을 공유한다.
+특히 게임과 영상 스트리밍 등 멀티미디어 application의 활용이 확대되면서, 사용자 경험(User Experience)은 multimedia processing에 관련된 개별 request가 요구된 시간 안에 완료되는지에 더욱 민감해지고 있다.
+일부 request가 deadline을 초과하거나 완료 시간이 크게 지연되면, frame drop, 화면 끊김(Stuttering) 등이 발생할 수 있다.
+따라서 deadline compliance와 tail latency는 Android application의 responsiveness와 서비스 품질을 평가하는 중요한 성능 지표이다.
+
+Linux 6.6 이전의 Completely Fair Scheduler(CFS)는 각 task의 Virtual Runtime(Vruntime)을 기반으로 task ordering을 결정하여 fairness를 유지한다. 
+Linux 6.6부터 도입된 Earliest Eligible Virtual deadline First(EEVDF)는 Virtual deadline을 이용하여 task ordering을 개선하였지만, 이 값은 application request의 실제 deadline이나 urgency를 나타내지는 않는다. 
+두 scheduler는 모두 fairness를 중심으로 task ordering을 결정하며, 개별 application request의 deadline이나 task 간 dependency가 request completion time에 미치는 영향을 직접적인 scheduling 기준으로 사용하지 않는다. 
+Nice value와 Cgroup을 통해 task 및 task Group의 상대적인 Scheduling Weight를 조절할 수 있지만, 이러한 설정만으로는 유사한 priority를 가진 task사이에서 동적으로 변화하는 deadline urgency를 구분하기 어렵다. 
+따라서 기존 Scheduler의 fairness를 활용하면서도 scheduling context에 따라 task ordering을 조정할 필요가 있다.
+
+Task의 scheduling urgency는 해당 task의 속성만으로 결정되지 않는다.
+예를 들어 deadline이 임박한 request를 처리하는 task를 먼저 실행하는 것이 유리한 경우가 있는 반면, 다른 task의 진행을 막고 있는 Lock Holder나 선행 task를 우선 실행하는 것이 전체 request의 deadline miss를 줄이는 상황도 존재한다.
+또한 CPU contention과 Wakeup pattern이 변화하면 동일한 task의 상대적인 scheduling urgency도 달라질 수 있다.
+Reinforcement Learning(RL)은 고정된 priority rule 대신 scheduling decision action 이후의 request latency와 deadline miss에 미치는 영향을 reward로 학습하여, 이러한 context-dependent task ordering에 대응할 수 있다.
+
+이 문제를 해결하는 데에는 두 가지 기술적 어려움이 존재한다.
+
+\begin{itemize}
+    \item Kernel Scheduler는 개별 application request의 실제
+    deadline이나 남은 CPU Demand를 일반적으로 직접 관측할 수 없다.
+    따라서 Scheduling Policy는 Virtual Runtime, CPU 사용 이력,
+    Runnable Waiting Time, Wakeup History 등 Kernel에서 관측
+    가능한 정보로부터 task의 상대적 중요도를 추론해야 한다.
+
+    \item Context-dependent 판단을 복잡한 Machine Learning
+    Model로 수행할 경우 Scheduling Critical Path에 추가적인
+    연산 비용이 발생한다. 특히 짧은 간격으로 task Selection이 반복되는 환경에서는
+    추론 비용 자체가 Scheduling Latency를 증가시켜 
+    학습된 정책의 성능 이득을 상쇄할 수 있다.
+
+\end{itemize}
+
+\section{RL-SchedExt Overview}
+
+본 논문에서는 이러한 문제를 해결하기 위해 Offline Reinforcement Learning으로 학습한 task ordering policy를 Android Kernel에서 실행하는 CPU scheduling framework인 RL-SchedExt를 제안한다.
+핵심 아이디어는 RL을 통해 scheduling context에 따른 Learned Vruntime Adjustment를 학습하고, 이를 CFS 기반 Vruntime에 반영하여 각 task의 Urgency-aware Vruntime을 계산하는 것이다. 
+Scheduler는 Urgency-aware Vruntime을 기준으로 task ordering을 결정함으로써, 기존 fairness 기반 Scheduling에 각 task의 deadline Urgency를 고려한 실행 순서를 반영한다.
+
+RL Teacher의 학습에는 가상 시간 기반 scheduling simulator를 사용한다.
+Simulator는 task arrival, CPU demand, wakeup, blocking, dependency와 scheduling decision에 따른 vruntime 변화를 모사한다.
+다양한 실행 특성을 가진 task를 조합하여 scheduling context를 생성하고, RL Teacher는 simulator와 상호작용하면서 이후의 request latency와 deadline miss에 기반한 reward를 통해 policy를 학습한다.
+이 과정은 실제 Android 배포 이전에 수행되는 simulator-based offline training이다.
+
+학습된 Teacher policy를 Android Kernel에 직접 적용하는 대신, RL-SchedExt는 Teacher--Student Distillation을 이용하여 경량 Neural Student Policy를 생성한다.
+Student는 각 Runnable task의 실행 이력과 CPU의 Global State로부터 구성한 57차원 입력을 사용하며, task Encoder와 Set-context Aggregation을 통해 현재 경쟁 중인 task들의 상대적 특성을 함께 반영한다.
+이러한 구조는 경쟁하는 task들의 상태에 따라 각 task의 상대적인 순서를 달리 결정할 수 있도록 한다.
+Teacher training과 distillation은 모두 Offline에서 수행하며, Android에서는 경량 student policy만 실행한다.
+
+Android runtime에서는 native kernel code가 Scheduling History를 수집하여 task별 57차원 state를 생성한다.
+Student는 각 task의 State를 입력받아 Urgency-aware adjustment를 계산한다.
+Native Kernel에서 계산된 Learned Vruntime Adjustment는 각 Task의 CFS 기반 Vruntime에 반영되어 Urgency-aware Vruntime을 생성한다. 이후 sched\_ext의 eBPF 프로그램은 Urgency-aware Vruntime을 기준으로 task ordering을 수행한다.
+이러한 방식은 CFS의 fairness 기반 Scheduling 기준을 활용하면서도, 실행 시점의 Workload 특성과 추론된 task urgency에 따라 실행 순서를 조정할 수 있도록 한다.
+
+\section{Evaluation and Contributions}
+RL-SchedExt를 Google Pixel 9 Pro XL의 실제 Android 15 환경에서 평가하였다.
+평가 대상은 Linux 6.1 기반 kernel로, 해당 환경의 기본 fair scheduler인
+CFS를 baseline으로 사용하였다.
+EEVDF는 이후 Linux 버전에서 도입된 방식이므로 본 실험의 baseline에는 포함하지 않았다.
+Microbenchmark에서는 짧고 빈번한 Wakeup과 긴 CPU Burst가 경쟁하는 상황, Lock을 통해 task 간 Dependency가 발생하는 상황, 그리고 실행 도중 Workload의 특성이 변화하는 상황을 포함한 세 가지 Workload를 평가하였다.
+그 결과 Neural Student는 CFS 대비 deadline miss를 19.4--26.8\%, Total deadline Overrun을 4.5--19.3\% 감소시켰다.
+request Completion Latency p99는 일부 Workload에서 소폭 증가하였다.
+특히 \textit{Mixed CPU Bursts}에서는 Deadline Budget이 4\,ms 미만인 Request의
+p99가 25.3\% 감소한 반면, 8\,ms 이상인 Request의 p99는 3.7\% 증가하였다.
+이는 짧은 Deadline 제약을 가진 Request의 Latency를 줄이는 과정에서
+상대적으로 긴 Deadline 제약을 가진 Request의 Latency가 증가할 수 있음을
+보여준다.
+
+실제 application 수준의 성능을 평가하기 위해 Android 게임 \textit{Mindustry}를 이용한 Macrobenchmark도 수행하였다.
+동일한 게임 시나리오에서 RL-SchedExt는 CFS 대비 average FPS를 11.9\% 향상시켰다.
+또한 frame interval p99는 86\,ms에서 66\,ms로 감소하여 23.3\% 개선되었으며,
+frame interval p50과 p95는 동일하게 유지되었다.
+이는 일반적인 frame 출력 간격을 유지하면서 긴 출력 지연을 줄여,
+평가한 게임 workload에서 frame pacing을 개선했음을 보여준다.
+
+본 논문의 주요 기여는 다음과 같다.
+
+\begin{itemize}
+    \item Learning-based task ordering:
+    fairness 기반 task ordering과 application deadline Compliance
+    사이의 불일치를 Scheduling 문제로 정의하고,
+    다양한 task 실행 특성과 Dependency가 포함된 Simulator에서
+    장기적인 성능을 고려한 Urgency-aware Vruntime Adjustment
+    Policy를 학습하는 방법을 제시한다.
+
+    \item Deployable Nonlinear Scheduling Policy:
+    Offline Teacher--Student Distillation을 통해
+    Runnable task 간 Context를 반영하는 경량 Neural Policy를
+    구성하고, 이를 Native Kernel Inference와 eBPF 기반
+    task Selection으로 통합한다.
+
+    \item Real-device Evaluation and Policy Analysis:
+    실제 Android에서 CFS 및 Linear Student와 비교하여
+    deadline miss와 deadline Overrun의 개선을 정량적으로
+    평가하고, 잔여 deadline에 따른 Urgency-aware Adjustment
+    분석을 통해 학습된 task ordering의 특성을 조사한다.
+\end{itemize}
