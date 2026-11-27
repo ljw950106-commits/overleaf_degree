@@ -67,8 +67,8 @@
 % @command title 논문 제목(title of thesis)
 % @options [default: (none)]
 % - korean: 한글제목(korean title) | english: 영문제목(english title)
-\title[korean] {GPU 대역폭 확장을 위한 \linebreak HBM 다이 간(Die-to-Die) 인터커넥트}
-\title[english]{Memory-Fabric: HBM Die-to-Die Interconnect \linebreak for GPU Bandwidth Expansion}
+\title[korean] {RL-SchedExt: 커널 내 신경망 추론 기반\linebreak 긴급도 인식 CPU 스케줄링}
+\title[english]{RL-SchedExt: Urgency-Aware CPU Scheduling\linebreak with In-Kernel Neural Inference}
 
 % @note 표지에 출력되는 제목을 강제로 줄바꿈하려면 \linebreak 을 삽입.
 %       \\ 나 \newline 등을 사용하면 안됩니다. (아래는 예시)
@@ -139,21 +139,21 @@
 
 % @command referee 심사위원 (석사과정 3인, 박사과정 5인)
 \referee[1]{원 유 집}
-\referee[2]{신 인 식}
-\referee[3]{권 영 진}
+\referee[2]{권 영 진}
+\referee[3]{신 인 식}
 % \referee[5] {Barack Obama}
 % Of course english name is available
 
 % @command approvaldate 지도교수논문승인일
 % @param   year,month,day 연,월,일 순으로 입력
-\approvaldate{2026}{6}{1}
+\approvaldate{2027}{1}{1}
 
 % @command refereedate 심사위원논문심사일
 % @param   year,month,day 연,월,일 순으로 입력
-\refereedate{2026}{6}{1}
+\refereedate{2027}{1}{1}
 
 % @command gradyear 졸업년도
-\gradyear{2026}
+\gradyear{2027}
 
 % 본문 시작
 \begin{document}
@@ -201,8 +201,8 @@
     % % 그림목차 (List of Figures) 생성
     % \listoffigures
 
-    % 위의 세 종류의 목차는 한꺼번에 다음 명령으로 생성할 수도 있습니다.
-    %\makecontents
+    위의 세 종류의 목차는 한꺼번에 다음 명령으로 생성할 수도 있습니다.
+    \makecontents
 
 %% 이하의 본문은 LaTeX 표준 클래스 report 양식에 준하여 작성하시면 됩니다.
 %% 하지만 part는 사용하지 못하도록 제거하였으므로, chapter가 문서 내의
@@ -346,76 +346,76 @@
 % - 1 : 본문과 감사의 글이 둘 다 한글일 때  | 2 : 본문은 한글인데 감사의 글이 영어일 때 | 3 :  본문과 감사의 글이 둘 다 영어일 때  | 4 : 본문은 영어인데 감사의 글이 % 한글일 때 
 %% It is optional.
 
-\acknowledgment[4]
+% \acknowledgment[4]
 
-%%
-%% 약력 시작
-%% Curriculum Vitae
-%%
-% @command curriculumvitae 이력서
-% @options [1 | 2 | 3 |4 ]
-% - 1 : 본문과 약력이 둘 다 한글일 때  | 2 : 본문은 한글인데 약력이 영어일 때 | 3 :  본문과 약력이 둘 다 영어일 때  | 4 : 본문은 영어인데 약력이 한글일 때 
-%% It is optional and you can change form of this in the class file if you want.
-\curriculumvitae[4]
+% %%
+% %% 약력 시작
+% %% Curriculum Vitae
+% %%
+% % @command curriculumvitae 이력서
+% % @options [1 | 2 | 3 |4 ]
+% % - 1 : 본문과 약력이 둘 다 한글일 때  | 2 : 본문은 한글인데 약력이 영어일 때 | 3 :  본문과 약력이 둘 다 영어일 때  | 4 : 본문은 영어인데 약력이 한글일 때 
+% %% It is optional and you can change form of this in the class file if you want.
+% \curriculumvitae[4]
 
-    % @environment personaldata 개인정보
-    % @command     name         이름
-    %              dateofbirth  생년월일
-    %              birthplace   출생지
-    %              domicile     본적지
-    %              address      주소지
-    %              email        E-mail 주소
-    % - 위 6개의 기본 필드 중에 이력서에 적고 싶은 정보를 입력
-    % input data only you want
-    \begin{personaldata}
-        \name       {안 효 원}
-        \dateofbirth{1986}{01}{30}
-        \birthplace {대한민국 서울}
-        \address    {경기도 수원시 영통구 덕영대로 1462-14}
-    \end{personaldata}
+%     % @environment personaldata 개인정보
+%     % @command     name         이름
+%     %              dateofbirth  생년월일
+%     %              birthplace   출생지
+%     %              domicile     본적지
+%     %              address      주소지
+%     %              email        E-mail 주소
+%     % - 위 6개의 기본 필드 중에 이력서에 적고 싶은 정보를 입력
+%     % input data only you want
+%     \begin{personaldata}
+%         \name       {안 효 원}
+%         \dateofbirth{1986}{01}{30}
+%         \birthplace {대한민국 서울}
+%         \address    {경기도 수원시 영통구 덕영대로 1462-14}
+%     \end{personaldata}
 
-    % @environment education 학력
-    % @options [default: (none)] - 수학기간을 입력
-    \begin{education}
-        \item[2001. 3.\ --\ 2004. 2.] 속초고등학교
-        \item[2004. 2.\ --\ 2012. 8.] 고려대학교 전기전자전파공학부 (학사)        
-        \item[2025. 3.\ --\ 2026. 8.] 한국과학기술원 시스템아키텍트대학원 (석사)
-    \end{education}
+%     % @environment education 학력
+%     % @options [default: (none)] - 수학기간을 입력
+%     \begin{education}
+%         \item[2001. 3.\ --\ 2004. 2.] 속초고등학교
+%         \item[2004. 2.\ --\ 2012. 8.] 고려대학교 전기전자전파공학부 (학사)        
+%         \item[2025. 3.\ --\ 2026. 8.] 한국과학기술원 시스템아키텍트대학원 (석사)
+%     \end{education}
 
-    % @environment career 경력
-    % @options [default: (none)] - 해당기간을 입력
-    \begin{career}
-        \item[2012. 7.\ --\ 2025. 2.] 삼성전자        
-    \end{career}
+%     % @environment career 경력
+%     % @options [default: (none)] - 해당기간을 입력
+%     \begin{career}
+%         \item[2012. 7.\ --\ 2025. 2.] 삼성전자        
+%     \end{career}
 
-    % @environment activity 학회활동
-    % @options [default: (none)] - 활동내용을 입력
-%%    \begin{activity}
-%%        \item J. Choi, \textbf{Yong-Hyun Kim}, K.J. Chang, and D. Tomanek,
-%%             \textit{Occurrence of itinerant ferromagnetism in C/BN superlattice
-%%             nanotubes}, 5th Asian Workshop on First-Principles Electronic
-%%             Structure Calculations, Seoul (Korea), October., 2002.
-%%    \end{activity}
+%     % @environment activity 학회활동
+%     % @options [default: (none)] - 활동내용을 입력
+% %%    \begin{activity}
+% %%        \item J. Choi, \textbf{Yong-Hyun Kim}, K.J. Chang, and D. Tomanek,
+% %%             \textit{Occurrence of itinerant ferromagnetism in C/BN superlattice
+% %%             nanotubes}, 5th Asian Workshop on First-Principles Electronic
+% %%             Structure Calculations, Seoul (Korea), October., 2002.
+% %%    \end{activity}
 
-    % @environment publication 연구업적
-    % @options [default: (none)] - 출판내용을 입력
-%     \begin{publication}
-%         %\item \textbf{Yong-Hyun Kim}, J. Choi, K.J. Chang, and D. Tomanek,
-%         %     \textit{Magnetic instability in partly opened C$_{60}$ isomers},
-%         %     in preparation.
-%         \item {\bf 안효원}, 이재원, 하승수, 박진우, 이현이, 정지영,
-% ``이종 칩렛 시스템을 위한 강화학습 기반 메모리 중심 배치 및 라우팅 최적화,"
-% \textit{대한전자공학회 하계종합학술대회}, 2026 (to be published).
-%         \item {하승수*, \bf 안효원}*,
-% ``SPHBM 기반 메모리 대역폭 및 용량 확장 패키지 구조,"
-% \textit{대한전자공학회 하계종합학술대회}, 2026 (to be published).
-%         \item Junho Park, {\bf Hyowon An}, Haeseok Suh, Youngsu Yoon, Hyuni Lee and Joungho Kim,
-% ``HBM-HBF-Centric Memory Pooling Architecture with Custom Base Die for Terabyte-Scale LLM Inference," in 
-% \textit{IEEE Computer Architecture Letters (CAL)}, 2026 (to be published).
-%         \item Hyuni Lee, Haeyeon Kim, JungHyun Lee, Inyoung Choi, Jaehun Lee, {\bf Hyowon An}, Chaemin Yang, and Joungho Kim,
-% ``Mem-Village: A Hybrid HBF-HBM Architecture on Glass for Ultra-Scale AI Inference Systems," in 
-% \textit{2025 IEEE Electrical Design of Advanced Packaging and Systems (EDAPS)}, 2025, pp. 1-3.
-% \end{publication}
+%     % @environment publication 연구업적
+%     % @options [default: (none)] - 출판내용을 입력
+% %     \begin{publication}
+% %         %\item \textbf{Yong-Hyun Kim}, J. Choi, K.J. Chang, and D. Tomanek,
+% %         %     \textit{Magnetic instability in partly opened C$_{60}$ isomers},
+% %         %     in preparation.
+% %         \item {\bf 안효원}, 이재원, 하승수, 박진우, 이현이, 정지영,
+% % ``이종 칩렛 시스템을 위한 강화학습 기반 메모리 중심 배치 및 라우팅 최적화,"
+% % \textit{대한전자공학회 하계종합학술대회}, 2026 (to be published).
+% %         \item {하승수*, \bf 안효원}*,
+% % ``SPHBM 기반 메모리 대역폭 및 용량 확장 패키지 구조,"
+% % \textit{대한전자공학회 하계종합학술대회}, 2026 (to be published).
+% %         \item Junho Park, {\bf Hyowon An}, Haeseok Suh, Youngsu Yoon, Hyuni Lee and Joungho Kim,
+% % ``HBM-HBF-Centric Memory Pooling Architecture with Custom Base Die for Terabyte-Scale LLM Inference," in 
+% % \textit{IEEE Computer Architecture Letters (CAL)}, 2026 (to be published).
+% %         \item Hyuni Lee, Haeyeon Kim, JungHyun Lee, Inyoung Choi, Jaehun Lee, {\bf Hyowon An}, Chaemin Yang, and Joungho Kim,
+% % ``Mem-Village: A Hybrid HBF-HBM Architecture on Glass for Ultra-Scale AI Inference Systems," in 
+% % \textit{2025 IEEE Electrical Design of Advanced Packaging and Systems (EDAPS)}, 2025, pp. 1-3.
+% % \end{publication}
 
   \label{paperlastpagelabel}     % <-- 추가 부분: 마지막 페이지 위치 지정	
 %% 본문 끝

@@ -409,8 +409,8 @@ Step Reward를 다음과 같이 정의한다.
     r_t ={}&
     R_t^{\mathrm{req}}
     + \lambda_b B_t
-    - \lambda_w W_t \\
-    &- \lambda_u U_t
+    - \lambda_w W_t
+    - \lambda_u U_t
     - \lambda_o O_t
     - \lambda_s N_t
     + R_t^{\mathrm{end}}
@@ -590,7 +590,7 @@ Value Head는 현재 Scheduling State에서 기대되는
 \begin{equation}
 \begin{aligned}
     V_{\omega}(s_t)
-    &= \mathbb{E}_{\pi}[G_t\mid s_t] \\
+    &= \mathbb{E}_{\pi}[G_t\mid s_t] 
     G_t &: \text{Discounted Cumulative Reward}
 \end{aligned}
 \end{equation}
