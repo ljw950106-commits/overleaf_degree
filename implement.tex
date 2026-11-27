@@ -1,0 +1,277 @@
+\section{Implementation}
+\label{sec:implementation}
+
+RL-SchedExt는 Linux Server에서 Scheduling Policy를 학습하고,
+학습된 Neural Student를 Android Kernel에 배포하는 방식으로 구현하였다.
+Runtime에서 학습에 필요한 Simulator 및 RL Teacher는 실행하지 않으며,
+Native Kernel에서 State Collection과 Neural Network Inference를 수행하고,
+sched\_ext의 eBPF Scheduling Policy에서 Task Selection을 수행한다.
+이러한 역할 분리를 통해 Scheduling Hot Path에서 발생하는
+추가적인 연산 및 Kernel과 User Space 간의 통신을 최소화한다.
+
+\subsection{Offline Policy Training}
+
+Offline Policy Training은 Scheduling Simulator와 PyTorch를 기반으로
+두 단계로 수행된다.
+Phase 1에서는 System Design에서 정의한 Workload를 생성하고,
+각 Scheduling Decision에 대한 State, 선택한 Action, Reward 및
+Next State를 수집한다.
+수집된 실행 경험을 이용하여 PPO Update를 수행하며,
+이 과정을 반복하여 RL Teacher의 Actor와 Critic을 학습시킨다.
+학습이 완료된 Actor는 이후 Knowledge Distillation의
+Teacher Policy로 사용된다.
+
+Phase 2에서는 다양한 Workload에서 CFS 기반 Fair Policy와
+학습된 Teacher Policy를 실행하여 Scheduling State를 수집한다.
+또한 중간 Student Policy에 의해 방문되는 State를 추가로 수집하여
+Teacher Policy만으로 생성한 Dataset에 학습 데이터가
+편중되는 문제를 완화한다.
+수집된 각 State에 대해 고정된 Teacher의
+Task Selection 결과와 Task별 Learned Vruntime Adjustment를
+계산하여 Distillation Target을 생성한다.
+
+실제 배포 모델의 학습에는 Q16.16 Fixed-point 형식으로
+Export된 Frozen Teacher를 사용하였다.
+해당 Teacher는 Simulator의 23차원 Task Feature와
+6차원 Global Feature를 입력으로 사용하며,
+Neural Student의 입력은 Android Kernel에서 구성할 수 있는
+57차원 State로 변환한다.
+즉, 동일한 Scheduling 상황과 Candidate Task Set에 대해
+각 Network에 대응하는 State Representation을 구성하고,
+Teacher의 출력과 Student의 출력을 비교하여 학습한다.
+% TODO: 현재 System Design의 공통 57D Teacher 가정 및
+% Teacher FC MAC 비교를 실제 Frozen Teacher(23D+6D)와 일치하도록 검토.
+% 최종 Teacher의 PPO Training Configuration 및 원본 FP32 Checkpoint는
+% 현재 확인한 Export 자료에 포함되어 있지 않으므로 수치를 임의 기재하지 않음.
+
+Candidate Task의 수가 Scheduling Decision마다 달라지므로,
+학습 시 최대 16개의 Candidate를 포함하는 Tensor로 State를 구성한다.
+실제 Candidate가 존재하지 않는 영역은 Masking을 적용하여
+Set-context Pooling, Task Selection Loss 및 Adjustment Regression Loss
+계산에서 제외한다.
+학습 Dataset과 Validation Dataset은 Workload 생성에 사용한
+Random Seed를 기준으로 분리한다.
+Neural Student는 AdamW Optimizer를 이용하여 학습하며,
+Validation Loss가 가장 낮은 Network Parameter를 최종 모델로 선정한다.
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabularx}{0.85\linewidth}{|X|c|}
+        \hline
+        \textbf{Parameter} & \textbf{Value} \\ \hline
+        Optimizer & AdamW \\ \hline
+        Learning Rate & 0.003 \\ \hline
+        Weight Decay & 0.0002 \\ \hline
+        Batch Size & 128 \\ \hline
+        Maximum Epochs & 55 \\ \hline
+        Training / Validation Seeds & 10 / 2 \\ \hline
+        Student Temperature ($\tau_S$) & 0.35\,ms \\ \hline
+        Adjustment Loss Weight ($\lambda_{\mathrm{adj}}$) & 0.30 \\ \hline
+        Maximum Candidate Tasks & 16 \\ \hline
+    \end{tabularx}
+    \caption{Neural Student training configuration.}
+    \label{tab:student_training_config}
+\end{table}
+
+\subsection{Model Deployment}
+\label{sec:model_deployment}
+
+학습된 Neural Student를 Kernel 내부에서 실행하기 위해
+Post-training Quantization을 적용한다.
+일반적인 Kernel Scheduling Context에서는 Floating-point Register
+사용에 제약이 있으며, 별도의 Neural Network Runtime을 실행하는
+방식은 Scheduling Hot Path에 추가적인 Overhead를 발생시킨다.
+따라서 RL-SchedExt는 Fully Connected Layer, Activation 및
+Set-context Pooling을 Integer 연산만으로 수행하도록 구현하였다.
+
+각 Fully Connected Layer의 Weight는 Output Channel별
+Symmetric INT8 Quantization을 적용한다.
+Output Channel $o$의 Weight에 대한 Scaling Factor와
+Quantized Weight는 다음과 같이 계산한다.
+
+\begin{equation}
+    \begin{aligned}
+        \sigma_o &= \frac{\max_j |w_{o,j}|}{127}, \\
+        q_{o,j} &= \operatorname{clip}
+        \left(\operatorname{round}
+        \left(\frac{w_{o,j}}{\sigma_o}\right),-127,127\right).
+    \end{aligned}
+    \label{eq:student_quantization}
+\end{equation}
+
+여기서 $\sigma_o$가 0에 가까운 경우에는
+0으로 나누는 연산을 방지하기 위해 최소 양의 값을 적용한다.
+Scaling Factor는 24개의 Fractional Bit를 가지는
+Q24 형식으로 변환하고, Bias 및 Activation은
+10개의 Fractional Bit를 가지는 Q10 형식으로 표현한다.
+따라서 INT8 Quantization은 Weight의 저장 형식에 적용되며,
+모든 중간 연산을 8-bit로 제한하는 방식은 아니다.
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabularx}{0.85\linewidth}{|X|c|}
+        \hline
+        \textbf{Component} & \textbf{Representation} \\ \hline
+        Weight & Signed INT8 \\ \hline
+        Per-channel Scale & Signed INT32 (Q24) \\ \hline
+        Bias & Signed INT32 (Q10) \\ \hline
+        Input State & Signed INT16 (Q10) \\ \hline
+        Intermediate Activation & Signed INT32 (Q10) \\ \hline
+        Accumulation & Signed INT64 \\ \hline
+        Tanh Table & Signed INT16 (Q10) \\ \hline
+    \end{tabularx}
+    \caption{Fixed-point representation of the deployed Neural Student.}
+    \label{tab:student_fixed_point}
+\end{table}
+
+Quantization이 완료된 Weight, Scaling Factor, Bias 및
+Tanh Lookup Table을 C Header의 정적 배열 형태로 변환하여
+Kernel Image에 포함한다.
+이때 Lookup Table은 Scheduling Policy 자체를 표현하는 것이 아니라
+Neural Network의 Nonlinear Activation을 계산하기 위한 용도로만 사용된다.
+
+Model Parameter는 Runtime에서 변경되지 않으며,
+별도의 User Space Inference Daemon이나
+Scheduling Decision마다 수행되는 Model Parameter 전송을
+필요로 하지 않는다.
+sched\_ext Loader는 Policy Mode를 설정하고,
+Native Kernel과 eBPF Scheduling Policy 사이의
+ABI Version 및 Model Hash 일치 여부를 확인할 수 있도록
+Configuration을 구성한다.
+
+\subsection{In-Kernel Neural Policy Inference}
+\label{sec:in_kernel_inference}
+
+RL-SchedExt는 Android 15의 Linux 6.1 Kernel에
+backport된 sched\_ext Framework를 기반으로 구현하였다.
+Neural Policy의 실행 경로는 Runtime State Collection,
+Native Kernel Inference 및 eBPF Scheduling Decision의
+세 단계로 구성된다.
+본 구현에서는 하나의 CPU Runqueue에 대한 Task Ordering에 집중하며,
+평가 환경에서는 CPU7의 Local Dispatch Queue (DSQ)를 사용한다.
+
+\subsubsection{Runtime State Collection}
+
+System Design에서 정의한 57차원 State를 구성하기 위해
+Native Kernel에서 Task별 Runtime History를 관리한다.
+Task의 Wakeup, 실행, Preemption 및 Sleep/Block과 관련된
+Scheduling Event를 이용하여 CPU Execution Time,
+Runnable Waiting Time, Wakeup Frequency 및 Service Debt 등의
+정보를 갱신한다.
+Task History는 PID와 Task 생성 시각을 함께 사용하여 식별함으로써
+PID가 재사용되는 경우 기존 Task의 History가
+다른 Task에 적용되는 것을 방지한다.
+
+Scheduling Decision 시점에는 Local DSQ의 Candidate Task를 수집하고,
+Runqueue와 Task History로부터 13차원 Task Feature 및
+6차원 Global Feature를 구성한다.
+이후 Candidate Task Set의 통계값과 Vruntime 기준
+상대적인 순위 및 Feature 차이를 계산하여
+38차원 Derived Context Feature를 생성한다.
+
+Feature Construction에서는 공통 통계와 CFS 기준 Candidate 정보를
+한 번 계산한 후 각 Task의 State 구성에 재사용한다.
+Simulator의 Android State Representation과 동일한
+Feature 순서, Scaling 및 값의 범위를 유지하여
+최종 57차원 State를 Q10 형식으로 변환한다.
+이 과정에서 Application-level Deadline이나
+Request Completion 정보는 Runtime 입력으로 사용하지 않는다.
+
+\subsubsection{Student Neural Policy Inference}
+
+Neural Student의 Forward Pass는 Native Kernel C로 구현하였다.
+eBPF Program 내부에서 Neural Network의 전체 연산을 수행하는 대신,
+Native Kernel에서 State Construction과 Neural Network Inference를
+수행함으로써 eBPF Verifier에 의해 제한되는
+Program Complexity와 Stack 사용량에 대한 부담을 줄인다.
+
+Fully Connected Layer의 Integer 연산은 다음과 같이 수행한다.
+입력과 Bias는 Q10 형식, Weight는 INT8 형식,
+Output Channel별 Scaling Factor는 Q24 형식으로 표현한다.
+
+\begin{equation}
+    y_o^{\mathrm{Q10}} =
+    \operatorname{round}
+    \left(
+        \frac{
+            m_o^{\mathrm{Q24}}\sum_j
+            x_j^{\mathrm{Q10}}q_{o,j}
+        }{2^{24}}
+    \right)+b_o^{\mathrm{Q10}},
+    \label{eq:student_integer_affine}
+\end{equation}
+
+여기서 $m_o^{\mathrm{Q24}}$는 Output Channel $o$의
+Quantized Scaling Factor이다.
+곱셈과 누산에는 Signed 64-bit Integer를 사용하며,
+Fixed-point 변환 시에는 양수와 음수에 대해
+동일한 Round-half-away-from-zero 규칙을 적용한다.
+연산 중 Overflow가 발생하면 해당 Inference 결과를
+Task Selection에 사용하지 않는다.
+
+Tanh Activation은 입력을 $[-4,4]$ 범위로 제한하고,
+Q10 간격으로 사전에 계산한 8,193개의 값을
+조회하는 방식으로 구현한다.
+이를 통해 Runtime에서 Floating-point 연산이나
+Exponential Function 계산 없이 Nonlinear Activation을 수행한다.
+
+DeepSets 기반 Inference는 전체 Candidate Task에 대해
+Task Encoder를 먼저 수행하고, 생성된 Embedding을 이용하여
+Mean/Max Pooling을 한 번 수행한다.
+공통 Set Context를 각 Task의 Embedding과 결합하여
+Priority Head를 실행하며, 실제 Candidate만 Pooling에 포함한다.
+최대 16개의 Candidate에 대한 State 및 Intermediate Buffer는
+미리 확보한 Scratch Buffer를 사용하여 관리하며,
+Scheduling Hot Path에서 동적 Memory Allocation을 수행하지 않는다.
+Candidate가 하나뿐인 경우에는 Task 간 순서 비교가 필요하지 않으므로
+Neural Inference를 생략할 수 있도록 하였다.
+
+Priority Head의 출력은 $\pm 2$\,ms 범위로 제한하고
+Nanosecond 단위의 Learned Vruntime Adjustment로 변환한다.
+계산된 값과 유효성 정보를 Candidate별 Scheduling Context에 기록하여
+eBPF Scheduling Policy에서 사용할 수 있도록 한다.
+
+\subsubsection{eBPF Scheduling Decision}
+
+sched\_ext의 Task Selection Callback은 Native Kernel에서 전달한
+Candidate별 Learned Vruntime Adjustment를 이용한다.
+eBPF Program은 Model Parameter를 직접 저장하거나
+Neural Network Inference를 수행하지 않으며,
+Candidate의 Vruntime과 Learned Vruntime Adjustment를 결합한
+Scheduling Key를 비교한다.
+
+Native 구현은 CFS 방식의 Accounting을 모사하는
+Shadow Vruntime을 유지하고, 기준 Vruntime을 뺀
+Vruntime Lag를 Task Selection에 사용한다.
+따라서 각 Candidate의 Scheduling Key는
+Equation~\ref{eq:urgency_aware_vruntime}과 동일한 순서를
+유지하면서 상대적인 Vruntime으로 비교할 수 있다.
+% 구현 코드의 tiny_corr_ns는 우선순위를 높이는 양의 correction으로,
+% 논문의 Learned Vruntime Adjustment는 그 부호를 반전한 값이다.
+% 실제 코드: key = ctx5_native_lag_ns - tiny_corr_ns.
+
+eBPF Program은 ABI Version, Model Hash, Ready Flag 및
+Candidate별 Inference 결과의 유효성을 확인한 후,
+가장 작은 Scheduling Key를 가지는 Candidate의 Index를 반환한다.
+동일한 Scheduling Key를 가지는 경우 기존 Candidate 순서를 유지한다.
+Runtime에서는 학습 시 사용한 Softmax와 Sampling을 수행하지 않는다.
+
+Native Kernel은 반환된 Candidate의 Task Identity,
+CPU Affinity 및 실행 가능 여부를 검증한 후 실제 Dispatch를 수행한다.
+모델이 준비되지 않았거나 Candidate 수가 지원 범위를 초과한 경우,
+또는 Inference 결과 및 Candidate Validation이 실패한 경우에는
+기존 sched\_ext Local DSQ의 Fallback 경로를 사용한다.
+추가적으로 Fairness Guard를 선택적으로 적용할 수 있도록 구현하여,
+학습된 Policy가 선택한 Task와 기존 Fair Ordering의
+최소 Vruntime Task 간의 Service Gap이 설정된 범위를 초과하는 경우
+기존 Fair Ordering을 우선하도록 한다.
+
+Learned Vruntime Adjustment는 Task의 Accounting 값 자체를
+변경하지 않고 Scheduling Key 계산에만 사용된다.
+따라서 Task Selection은 Neural Policy에 의해 조정되지만,
+CPU 실행 시간에 대한 Weighted Vruntime Accounting과
+Time Slice 관리는 별도의 기존 Scheduling Mechanism을 통해 수행된다.
