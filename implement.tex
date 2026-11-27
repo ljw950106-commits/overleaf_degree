@@ -1,325 +1,171 @@
-\section{In-Kernel Neural Policy Inference}
 \label{sec:implementation}
-\label{sec:in_kernel_inference}
 
 RL-SchedExt는 Android 15의 Linux 6.1 Kernel에
 Backport된 sched\_ext Framework를 기반으로 구현하였다.
-학습된 Neural Student의 Runtime 실행 과정은
-Runtime State Collection, Student Neural Policy Inference 및
-eBPF Scheduling Decision으로 구성된다.
+Native Kernel에서 Scheduling Event에 따른 Task의 실행 이력을
+관리하고, 다음 Task를 선택하는 시점에 Neural Student의
+Inference를 수행한다. Inference 결과는 eBPF Scheduling Policy에
+전달되어 실제 Task Selection에 사용된다.
+Neural Policy는 하나의 CPU에서 경쟁하는 Runnable Task의
+실행 순서에 적용되며, CPU Selection 및 Load Balancing은
+학습 대상에 포함하지 않는다.
 
-RL-SchedExt는 기존 sched\_ext의 Task Lifecycle 및 Dispatch 경로에
-Native Kernel 기반의 State Collection과 Neural Network Inference를
-통합하고, Task Selection을 위한 eBPF Callback을 추가하였다.
-Scheduling Decision에 필요한 Feature Construction 및
-Neural Network 연산은 Native Kernel에서 수행하며,
-eBPF Program에는 각 Candidate의 Vruntime Lag와
-Learned Vruntime Adjustment를 전달한다.
-이를 통해 eBPF Verifier의 Program Complexity 및 Stack 제약에
-대한 부담을 줄이면서 Scheduling Policy의 최종 Task Selection은
-eBPF Program에서 수행할 수 있다.
-별도의 User Space Inference Daemon과 Runtime 학습은 필요하지 않다.
+\section{Scheduling Event-driven State Collection}
+\label{sec:runtime_state_collection}
 
-본 구현의 Neural Policy는 CPU7의 Local Dispatch Queue (DSQ)를
-대상으로 동작한다.
-따라서 본 연구의 적용 범위는 하나의 CPU에서 경쟁하는
-Runnable Task의 실행 순서를 결정하는 것이며,
-CPU Selection 및 Load Balancing을 학습하는 것은 아니다.
+RL-SchedExt는 Scheduling Decision 시점에 필요한 정보를
+확보하기 위해 Task의 상태가 변경되는 Scheduling Event에서
+Runtime History를 갱신한다.
+이를 위해 Native Kernel의 sched\_ext 실행 경로에
+Runnable, Running, Stopping 및 Quiescent Event에 대응하는
+History Update Handler를 추가하였다.
 
-% Implementation reference:
-% android-gs-caimito-6.1-android15-qpr2-beta
-% integration/ctx5-tiny-linear-v6-20261122
-% aosp/kernel/sched/ext.c, scx_rl_ctx5_native.h,
-% scx_rl_ctx5_native_history.h, scx_rl_ctx5_tiny.h
-% aosp/tools/sched_ext/include/scx/rl_ctx5_export_core.h,
-% rl_ctx5_tiny_infer.h, rl_ctx5_tiny.bpf.h
-% aosp/tools/sched_ext/scx_simple.bpf.c
+\paragraph{Runnable and Wakeup.}
+Task가 Runnable 상태로 전환되면 대기 시작 시각과
+Scheduling Weight를 기록하고, 해당 Task를 Runnable Task Set에
+포함한다. Sleep 상태에서 Wakeup된 Task는 Wakeup 시각을
+추가로 기록하며, 이전 Sleep 구간을 반영하여 Runtime History를
+갱신한다. Wakeup History는 제한된 크기의 Timestamp Ring으로
+관리하므로 과거의 전체 실행 이력을 저장할 필요가 없다.
+Task가 CPU를 기다리는 동안에는 기록된 대기 시작 시각으로부터
+현재 Waiting Time을 계산할 수 있다.
 
-\subsection{Runtime State Collection}
+\paragraph{Running.}
+Scheduling Policy에 의해 Task가 선택되어 실행되면
+현재 시각과 대기 시작 시각의 차이를 이용하여
+실제 Runnable Waiting Time을 계산한다.
+측정된 Waiting Time은 Exponentially Weighted Moving Average
+(EWMA)에 반영하고, 실행 시작 시각과 현재 CPU에서 실행 중인
+Task의 정보를 갱신한다.
+이전과 다른 sched\_ext Task가 실행되는 경우에는
+Context Switch History도 갱신한다.
 
-\paragraph{Event-driven Runtime History.}
-System Design에서 정의한 State Feature는 단일 Scheduling Event에서
-모두 관측할 수 있는 정보가 아니다.
-예를 들어 Wakeup Rate와 CPU Utilization은 일정 기간의 실행 이력이
-필요하며, Current Wait는 Task가 Runnable 상태로 전환된 시점과
-실제로 실행되는 시점 사이의 시간 정보를 필요로 한다.
-따라서 RL-SchedExt는 Native Kernel에서 Task별 Runtime History를
-관리하고, Scheduling Event가 발생할 때 관련 정보를 갱신한다.
+\paragraph{Stopping and Preemption.}
+실행 중인 Task가 CPU 사용을 중단하면 해당 시점까지의
+CPU Execution Time과 CPU Service 관련 정보를 반영한다.
+sched\_ext 환경에서도 Weighted Vruntime을 관리하기 위해
+별도의 Shadow Vruntime을 유지하며, 실제 실행 시간과
+Scheduling Weight를 이용하여 이를 갱신한다.
+Task가 여전히 Runnable 상태인 경우에는 Preemption History를
+기록하고, 새로운 대기 시작 시각을 설정한다.
+따라서 이후 Scheduling Decision에서 해당 Task가 다시 선택될 때까지
+발생한 Waiting Time을 추적할 수 있다.
 
-Table~\ref{tab:runtime_events}는 State Collection을 위해 추가한
-Native Kernel Event와 주요 갱신 정보를 나타낸다.
-Task History는 PID와 Task의 생성 시각을 함께 사용하여 식별하며,
-Task의 Scheduling Class 또는 CPU 소속이 변경되는 경우
-기존 History의 유효성을 관리한다.
-Native Policy Mode에서는 eBPF의 기존 History 갱신 경로를
-사용하지 않아 동일 Event가 중복으로 반영되지 않도록 한다.
+\paragraph{Quiescent.}
+Task가 Sleep 또는 Blocking 상태로 전환되면
+Sleep 시각을 기록하고 Runnable Task Set에서 제거한다.
+이후 Task가 다시 Wakeup되면 이전에 기록한 실행 이력을
+바탕으로 새로운 Runnable 구간의 Accounting을 시작한다.
+이러한 Event-driven Accounting을 통해 Scheduling Decision마다
+과거의 전체 실행 이력을 다시 탐색하지 않고
+Neural Student의 입력에 필요한 Runtime History를 확보한다.
 
-\begin{table}[htbp]
-    \centering
-    \small
-    \renewcommand{\arraystretch}{1.15}
-    \begin{tabularx}{\linewidth}{|p{0.24\linewidth}|X|}
-        \hline
-        \textbf{Scheduling Event} & \textbf{Runtime History Update} \\ \hline
-        Runnable & Runnable transition, waiting start, wakeup history \\ \hline
-        Running & Waiting time, execution start, context switch history \\ \hline
-        Stopping & Execution accounting, preemption history, waiting state \\ \hline
-        Quiescent & Sleep/block history, runnable state removal \\ \hline
-        Weight Change & Scheduling weight and service accounting \\ \hline
-        Reset & Task history initialization or invalidation \\ \hline
-    \end{tabularx}
-    \caption{Runtime history updates on scheduling events.}
-    \label{tab:runtime_events}
-\end{table}
 
-CPU Utilization과 Runnable Ratio는 시간에 따른
-Exponentially Weighted Moving Average (EWMA)를 이용하여 관리한다.
-Wakeup 등의 빈도 정보는 제한된 크기의 Timestamp Ring을
-이용하여 계산한다.
-CPU Execution Time 및 Scheduling Weight를 기반으로
-각 Task에 기대되는 CPU Service와 실제 제공된 CPU Service의
-차이를 누적하여 Service Debt를 구성한다.
-이와 같이 Event-driven Accounting을 사용함으로써
-Scheduling Decision마다 과거의 전체 실행 이력을
-다시 탐색할 필요가 없다.
+\section{In-Kernel Neural Policy Inference}
+\label{sec:in_kernel_inference}
 
-\paragraph{Shadow Vruntime Accounting.}
-sched\_ext에서 관리하는 Dispatch Queue의 Virtual Time은
-CFS Scheduling Entity의 Vruntime과 동일한 Accounting 값이 아니다.
-또한 Task가 sched\_ext Scheduling Class에서 실행되는 동안
-CFS의 Vruntime이 기존 CFS 실행 경로와 동일하게
-갱신된다고 가정할 수 없다.
-따라서 RL-SchedExt는 CFS 기반 Scheduling Policy를 학습한
-Neural Student의 입력과 Task Selection에 사용하기 위해
-별도의 Shadow Vruntime을 관리한다.
+\paragraph{Scheduling Decision and State Construction.}
+RL-SchedExt는 다음 Task를 선택해야 하는 시점에
+Neural Student의 Inference를 수행한다.
+평가에 사용한 설정에서는 Task의 Blocking,
+Wakeup에 의한 Preemption 및 Time Slice 만료 등에 따라
+Rescheduling이 발생한다.
+Time Slice와 Wakeup 및 Tick Preemption은 CFS 방식의
+Scheduling Mechanism을 모사하며,
+High-resolution Scheduler Tick (HRTICK)을 활용하여
+Time Slice 만료에 따른 Rescheduling을 요청할 수 있도록 하였다.
+즉, Neural Student는 현재 Task의 선점 시점이나 Time Slice를
+직접 결정하지 않고, 다음에 실행할 Task의 우선순위를 조정한다.
 
-Task $i$가 $\Delta t_i$ 동안 실행된 경우
-Shadow Vruntime은 다음과 같이 갱신한다.
-
-\begin{equation}
-    V_i^{\mathrm{shadow}} \leftarrow
-    V_i^{\mathrm{shadow}} +
-    \Delta t_i \frac{w_{\mathrm{ref}}}{w_i}.
-    \label{eq:shadow_vruntime}
-\end{equation}
-
-여기서 $w_i$는 sched\_ext Scheduling Weight이며,
-$w_{\mathrm{ref}}$는 기준 Weight이다.
-실행 시간에 따른 Weighted Accounting과 Wakeup 시의
-Vruntime Placement를 별도로 관리하여
-CFS의 주요 Virtual Runtime Dynamics를 모사한다.
-Learned Vruntime Adjustment는 이러한 Accounting 과정에
-반영하지 않는다.
-
-Scheduling Decision 시점에는 Candidate Task Set의
-최소 Shadow Vruntime을 기준으로 Vruntime Lag를 계산한다.
-
-\begin{equation}
-    \ell_i = V_i^{\mathrm{shadow}} -
-    \min_{j\in\mathcal{C}} V_j^{\mathrm{shadow}}.
-    \label{eq:runtime_vruntime_lag}
-\end{equation}
-
-이를 통해 절대적인 Vruntime 값 대신 Candidate Task 간의
-상대적인 CPU Service 차이를 State Feature로 사용한다.
-이 Shadow Accounting은 CFS의 주요 동작을 모사하는 것이며,
-CFS의 전체 Scheduling Hierarchy와 동작을
-완전히 동일하게 재현하는 것은 아니다.
-
-\paragraph{Candidate Collection and State Construction.}
 Task Selection 시점에는 Runqueue Lock을 유지한 상태에서
-Local DSQ에 존재하는 Task 중 현재 CPU에서 실행 가능한
-Candidate를 수집한다.
-Scheduling Class, Runnable 상태 및 CPU Affinity를 확인하고,
-Task Identity를 포함하는 Scheduling Context를 구성한다.
-History가 유효하지 않거나 Candidate 수가 최대 16개를
-초과하는 경우에는 일부 Candidate만을 이용하여
-Neural Policy를 실행하지 않는다.
+Local Dispatch Queue (DSQ)의 실행 가능한 Candidate를 수집한다.
+수집된 Candidate의 Runtime History를 현재 시각까지 반영하고,
+Task Set의 공통 정보를 계산한 후
+System Design에서 정의한 57차원 State를 각 Candidate에 대해 구성한다.
+공통 통계값은 한 번 계산하여 각 Candidate의 State Construction에
+재사용한다.
 
-수집된 Candidate의 Runtime History를 현재 시각까지 갱신한 후,
-13차원 Task Feature와 6차원 Global Feature를 추출한다.
-Task Set의 Feature 합계, 최댓값 및 최소 Vruntime을 가지는
-첫 번째와 두 번째 Candidate 등의 공통 정보는
-Scheduling Decision마다 한 번만 계산한다.
-이 정보를 각 Task의 State Construction에서 재사용하며,
-Task별 상대 순위와 다른 Candidate와의 Feature 차이를
-계산하여 38차원 Derived Context Feature를 구성한다.
+\paragraph{Integer-only Inference.}
+Kernel Scheduling Context에서 Floating-point 연산을 사용하지
+않도록 Neural Student의 Forward Pass를 Native Kernel C의
+Integer 연산으로 구현하였다.
+Fully Connected Layer의 Weight는 INT8, Input State와
+Activation은 Q10, Output Channel별 Scale은 Q24 형식으로
+표현하며, 곱셈 및 누산에는 64-bit Integer를 사용한다.
+Tanh Activation은 사전에 계산된 값을 조회하여 수행한다.
+양자화된 Model Parameter는 정적 C Header 형태로 Kernel에
+포함되므로, Scheduling Decision마다 별도의 User Space
+Inference Daemon과 통신할 필요가 없다.
 
-최종 State는 Simulator에서 정의한 Android Feature Representation과
-동일한 Feature 순서 및 Scaling을 사용하여
-57차원의 Signed Q10 Vector로 변환한다.
-State의 Feature Scaling과 Saturation은
-Runtime에서 학습 시 사용한 입력 범위를 유지하기 위한 것이다.
-이 과정에서 Application-level Deadline이나
-Request Completion 정보는 사용하지 않는다.
+\paragraph{Inference Overhead Reduction.}
+Runqueue Lock을 유지하는 Scheduling Hot Path의 연산량과
+Memory 사용량을 제한하기 위해 최대 Candidate 수를 16개로 설정하고,
+State 및 Intermediate Activation을 저장할 Scratch Buffer를
+사전에 확보하였다.
+또한 단일 Candidate만 존재하는 일반적인 Next-task Selection에서는
+Task 간의 순서를 비교할 필요가 없으므로,
+Neural Network의 Forward Pass를 생략하고 0의 Adjustment를
+사용하는 Fast Path를 구현하였다.
+복수의 Candidate가 존재하는 경우에는 Neural Student가
+각 Task의 Learned Vruntime Adjustment를 계산하며,
+이를 $\pm 2$\,ms 범위의 Nanosecond 단위 정수로 변환한다.
 
-\subsection{Student Neural Policy Inference}
 
-\paragraph{Integer-only Neural Inference.}
-Kernel Scheduling Context에서는 Floating-point 연산의 사용에
-제약이 있으므로, 학습된 Neural Student를
-Integer 연산 기반의 Network로 변환하였다.
-학습 완료 후 Fully Connected Layer의 Weight를
-Output Channel별 Symmetric INT8 형식으로 양자화하며,
-Scale은 Q24, Bias와 Intermediate Activation은 Q10 형식으로
-표현한다.
-양자화된 Model Parameter와 Activation 계산에 필요한
-정적 배열은 C Header 형태로 Kernel에 포함한다.
+\section{Urgency-aware Task Selection}
+\label{sec:runtime_task_selection}
 
-각 Fully Connected Layer의 Output Channel $o$는
-다음과 같은 Fixed-point 연산으로 계산된다.
+\paragraph{eBPF Scheduling Decision.}
+RL-SchedExt는 기존 sched\_ext의 Local DSQ 선택 경로에
+\texttt{rl\_choose} Callback을 추가하였다.
+Native Kernel에서 계산한 Candidate별 Vruntime Lag,
+Learned Vruntime Adjustment 및 유효성 정보는
+\texttt{scx\_rl\_pick\_ctx}를 통해 eBPF Program에 전달된다.
+Vruntime Lag는 Candidate Set의 최소 Shadow Vruntime을
+기준으로 계산한 상대적인 Vruntime이다.
 
-\begin{equation}
-    y_o^{\mathrm{Q10}} =
-    \operatorname{round}
-    \left(
-        \frac{
-            m_o^{\mathrm{Q24}}\sum_j
-            x_j^{\mathrm{Q10}}q_{o,j}
-        }{2^{24}}
-    \right)+b_o^{\mathrm{Q10}},
-    \label{eq:student_integer_affine}
-\end{equation}
+eBPF Program은 Equation~\ref{eq:urgency_aware_vruntime}에
+따라 각 Candidate의 Vruntime Lag에 Learned Vruntime Adjustment를
+반영하고, 계산된 값이 가장 작은 Candidate의 Index를
+Native Kernel에 반환한다.
+모든 Candidate에 대해 동일한 기준 Vruntime을 차감하므로
+절대 Shadow Vruntime을 사용한 경우와 동일한 비교 순서를 얻는다.
+Neural Network 연산을 Native Kernel에서 수행하고
+Task Selection만 eBPF Program에서 수행함으로써
+eBPF Verifier의 Program Complexity 및 Stack 제약에 대한
+부담을 줄인다.
 
-여기서 $q_{o,j}$는 INT8 Weight,
-$m_o^{\mathrm{Q24}}$는 Output Channel별 Scale이며,
-$b_o^{\mathrm{Q10}}$는 Bias이다.
-곱셈 및 누산에는 Signed 64-bit Integer를 사용하고,
-Fixed-point 변환에는 Round-half-away-from-zero 규칙을 적용한다.
-연산 중 Overflow가 발생한 경우에는 해당 결과를 사용하지 않는다.
+% Implementation sign convention:
+% scheduling key = ctx5_native_lag_ns - tiny_corr_ns.
+% The paper's Learned Vruntime Adjustment is -tiny_corr_ns.
 
-Tanh Activation은 입력을 $[-4,4]$ 범위로 제한한 후,
-Q10 간격으로 미리 계산된 8,193개의 값을 조회하여 수행한다.
-따라서 Scheduling Hot Path에서 Floating-point 연산이나
-Exponential Function 계산이 필요하지 않다.
-이 Table은 Scheduling Policy가 아니라 Activation Function을
-구현하기 위한 것으로, Neural Network의 Weight와
-Set-context 연산은 그대로 유지된다.
+\paragraph{Example of Task Ordering.}
+두 Runnable Task A와 B의 Vruntime Lag가 각각
+0\,ms와 0.6\,ms라고 가정한다.
+다른 Scheduling 조건이 동일한 단순화된 CFS 기반의
+Vruntime 비교에서는 Task A가 먼저 선택된다.
+반면 Neural Student가 Task A와 B에 각각
+$+0.2$\,ms와 $-1.0$\,ms의 Learned Vruntime Adjustment를
+부여하면, Task Selection에 사용하는 상대적인
+Urgency-aware Vruntime은 각각 0.2\,ms와 $-0.4$\,ms가 된다.
+따라서 추가적인 선택 제한이 적용되지 않는 경우
+RL-SchedExt는 Task B를 다음 실행 대상으로 선택한다.
 
-\paragraph{Bounded Inference and Fast Path.}
-DeepSets 구조에서는 각 Task의 Embedding을 계산한 후
-전체 Candidate Task Set의 Context를 구성해야 한다.
-이에 따라 Native Kernel의 Forward Pass를
-Task Encoding, Mean/Max Pooling 및 Priority Head의
-세 단계로 분리하였다.
-전체 Candidate의 Embedding을 먼저 계산하여 저장하고,
-Set Context는 한 번만 계산하여 각 Task의 Priority Head에서
-공통으로 사용한다.
+이 예시의 수치는 Task Ordering이 변경되는 원리를 설명하기
+위한 가정이며 실제 측정 결과는 아니다.
+Learned Vruntime Adjustment는 해당 Scheduling Decision의
+Task Selection에만 사용되므로 기존 Vruntime Accounting 값이나
+Time Slice 자체를 변경하지 않는다.
 
-최대 Candidate 수를 16개로 제한하고,
-Input State와 Intermediate Activation을 저장하기 위한
-Scratch Buffer를 사전에 확보한다.
-이를 통해 Runqueue Lock을 유지한 Scheduling Hot Path에서
-동적 Memory Allocation을 수행하지 않는다.
-Fully Connected Layer의 연산량은 Candidate 수 $N$에 대해
-$1{,}720N$ MAC으로 증가하며,
-Feature Construction의 Task별 상대 순위 계산에는
-별도의 Candidate 간 비교가 필요하다.
+\paragraph{Candidate Validation and Dispatch.}
+eBPF Callback이 반환한 Candidate의 Index와 Task Identity,
+CPU Affinity 및 실행 가능 여부는 Native Kernel에서 검증한 후
+실제 Dispatch에 반영한다.
+Candidate 수가 지원 범위를 초과하거나 State 또는 Inference
+결과가 유효하지 않은 경우, 또는 Candidate Validation에 실패한
+경우에는 기존 Local DSQ 선택 경로를 사용한다.
+선택적으로 Fairness Guard를 적용하여 기존 Weighted DSQ
+Virtual Time의 순서에서 과도하게 벗어나는 선택을 제한할 수 있다.
 
-또한 일반적인 Next-task Selection에서 Candidate가 하나뿐인 경우에는
-Priority Adjustment가 Task Selection 결과를 변경할 수 없다.
-따라서 단일 Candidate에 대해서는 State Construction 및
-유효성 확인 이후 Neural Network의 Forward Pass를 생략하고,
-0의 Adjustment를 전달하는 Fast Path를 구현하였다.
-이는 Wakeup 평가나 Audit Mode까지 생략하는 방식은 아니다.
-
-Priority Head의 출력은 $\pm 2$\,ms 범위로 제한하며,
-Nanosecond 단위의 정수로 변환한다.
-계산된 Adjustment와 Candidate별 Valid Flag를
-Scheduling Context에 기록한 후 eBPF Program으로 전달한다.
-
-\subsection{eBPF Scheduling Decision}
-
-\paragraph{Task Selection Callback.}
-기존 sched\_ext의 Local DSQ 기반 Task Selection 경로에
-RL-SchedExt의 Task Selection Callback인
-\texttt{rl\_choose}를 추가하였다.
-Native Kernel은 다음 Task를 선택해야 하는 시점에
-Candidate Collection과 Neural Inference를 수행하고,
-\texttt{scx\_rl\_pick\_ctx}를 통해
-Candidate의 Vruntime Lag, Learned Adjustment 및
-유효성 정보를 eBPF Program에 전달한다.
-
-eBPF Program은 전달된 Candidate에 대해
-Equation~\ref{eq:urgency_aware_vruntime}에 대응하는
-Scheduling Key를 계산한다.
-
-\begin{equation}
-    K_i = \ell_i + \Delta V_i^S.
-    \label{eq:runtime_scheduling_key}
-\end{equation}
-
-여기서 $\ell_i$는 Equation~\ref{eq:runtime_vruntime_lag}에서
-정의한 Vruntime Lag이다.
-동일한 기준 Vruntime을 모든 Candidate에서 차감하므로
-절대 Shadow Vruntime에 Adjustment를 적용하는 경우와
-동일한 순서를 얻을 수 있다.
-% 실제 코드의 tiny_corr_ns는 양수일 때 우선순위를 높이는
-% correction이며, 본문의 Delta V와 부호가 반대이다.
-% K_i = ctx5_native_lag_ns - tiny_corr_ns.
-
-eBPF Callback은 ABI Version, Model Hash 및 Ready Flag를
-검증한 후 Scheduling Key가 가장 작은 Candidate의 Index를
-반환한다.
-동일한 Key에 대해서는 기존 Candidate 순서를 유지하며,
-Runtime Task Selection에는 Softmax와 Sampling이 필요하지 않다.
-최종적으로 Native Kernel은 반환된 Index에 해당하는
-Task의 실행 가능 여부를 검증하고 Dispatch를 수행한다.
-
-\paragraph{Preserving CFS Scheduling Mechanisms.}
-Neural Student는 어떤 Task를 다음에 실행할 것인지를 결정하지만,
-현재 Task를 언제 선점할 것인지 또는 선택된 Task에
-얼마나 긴 Time Slice를 부여할 것인지는 직접 결정하지 않는다.
-이러한 요소까지 동시에 변경하면
-Neural Policy에 의한 Task Ordering의 효과를 분리하기 어렵다.
-
-따라서 RL-SchedExt는 sched\_ext 환경에 CFS 방식의
-Time Slice 계산과 Preemption Mechanism을 구현하였다.
-Time Slice는 Runnable Task 수와 Scheduling Weight의 합,
-Scheduling Latency 및 Minimum Granularity를 기반으로 계산한다.
-Task의 실행 시간이 계산된 Time Slice에 도달하는 시점에는
-기존 High-resolution Scheduler Tick (HRTICK)을 활용하여
-Rescheduling을 요청할 수 있도록 하였다.
-또한 Runnable Task Set이 변경될 때 현재 Task의
-Time Slice를 재평가한다.
-
-Wakeup Preemption은 CFS 방식의 Vruntime 비교와
-Wakeup Granularity를 이용하며,
-Periodic Tick에서는 실제 실행 시간과 Ideal Time Slice,
-다른 Runnable Task와의 Virtual Runtime 차이를 고려한다.
-이러한 Preemption Mechanism이 Rescheduling을 요청하면
-새로운 Scheduling Decision 시점에서 Neural Student가
-Candidate Task의 실행 우선순위를 다시 계산한다.
-즉, 평가에 사용한 CFS-style Wakeup 경로에서는
-Wakeup 자체가 Neural Network를 통해 선점 여부를 결정하지 않는다.
-Learned Adjustment는 Task Ordering에만 적용되며,
-Weighted Vruntime Accounting이나 Time Slice의 크기를
-직접 변경하지 않는다.
-
-\paragraph{Candidate Validation and Fallback.}
-Neural Policy를 Kernel Scheduling에 적용하기 위해서는
-Inference 결과의 정확성뿐만 아니라
-실행 가능한 Task가 선택되는지에 대한 검증이 필요하다.
-RL-SchedExt는 Native State Snapshot과 eBPF Callback의
-반환 결과를 검증하며,
-Candidate 수 초과, 유효하지 않은 History,
-Model ABI 또는 Hash 불일치, Integer Overflow 등의 경우에는
-Neural Policy의 결정을 적용하지 않는다.
-유효한 Task Selection을 얻지 못하면 기존 sched\_ext의
-Local DSQ 선택 경로로 복귀한다.
-
-또한 선택적으로 Fairness Guard를 활성화할 수 있다.
-Fairness Guard는 Neural Policy가 선택한 Task와
-Candidate 중 가장 작은 Weighted DSQ Virtual Time을 가지는
-Task의 Virtual Time 차이를 비교한다.
-이 차이가 설정된 Budget을 초과하면
-Neural Policy의 선택 대신 해당 Fair Candidate를 실행한다.
-이는 Neural Policy가 기존 CPU Service Ordering에서
-과도하게 벗어나는 상황을 제한하기 위한 장치이며,
-모든 Workload에서 Starvation이 발생하지 않음을 보장하는
-절대적인 시간 제한은 아니다.
-
-이와 같이 RL-SchedExt는 학습된 Policy를
-기존 Scheduling Mechanism과 분리하여 적용하고,
-유효한 State 및 Inference 결과가 확보된 경우에만
-Neural Policy에 의한 Task Ordering을 수행한다.
+선택된 Task가 실행되면 Scheduling Event에 따라
+Runtime History가 다시 갱신되며, 다음 Scheduling Decision에서는
+갱신된 정보를 이용하여 새로운 Task Ordering을 결정한다.
