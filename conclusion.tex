@@ -1,6 +1,5 @@
 % Conclusion
-\section{Summary of Findings}
-
+% \section{Summary of Findings}
 본 논문에서는 Application-level Deadline을 직접 관측하기 어려운 Android 환경에서 기존 Fairness 기반 CPU Scheduling을 보완하기 위해 RL-SchedExt를 제안하였다.
 RL-SchedExt는 Scheduling Simulator와의 상호작용을 통해 Task의 실행 특성, CPU 경쟁 및 Task 간 Dependency에 따른 Scheduling Policy를 학습하고, Teacher--Student Knowledge Distillation과 INT8 Quantization을 통해 경량 Neural Student를 구성한다.
 실제 Android Kernel에서는 관측 가능한 Runtime State를 기반으로 Learned Vruntime Adjustment를 계산하고, sched\_ext의 eBPF Scheduling Program을 통해 Urgency-aware Vruntime에 따른 Task Selection을 수행한다.
@@ -16,8 +15,7 @@ Remaining Deadline과 Relative Learned Vruntime Adjustment의 관계를 분석�
 실제 Android 게임 \textit{Mindustry}에서는 CFS 대비 Average FPS를 11.9\% 향상시켰으며, 일반적인 Frame Interval을 유지하면서 Frame Interval의 Tail Latency를 감소시켰다.
 이러한 결과는 Neural Student를 실제 Android Kernel에 통합하여 Application의 Deadline Compliance와 화면 갱신 성능을 개선할 수 있음을 보여준다.
 
-\section{Limitations and Future Work}
-
+% \section{Limitations and Future Work}
 본 연구는 단일 CPU에서 경쟁하는 Task의 실행 순서 결정에 초점을 두었다.
 향후에는 Multi-core 및 Heterogeneous Multi-core 환경으로 Scheduling Policy를 확장하고, Task Placement, Core Migration, DVFS 및 전력 소비 등을 함께 고려할 필요가 있다.
 또한 평가에 사용된 Workload와 Device의 범위를 확대하여 학습된 Scheduling Policy의 Generalization Performance를 검증하고, Kernel 내부의 Inference Overhead와 장기적인 CPU 자원 할당의 Fairness에 대한 추가적인 정량 평가를 수행할 필요가 있다.

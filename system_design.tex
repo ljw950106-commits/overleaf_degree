@@ -431,6 +431,44 @@ Task Selection에만 사용된다.
 차감한 값을 사용하지만, 동일한 기준값을 차감하므로 Task Ordering은
 변하지 않는다.
 
+
+\begin{table}[t]
+    \centering
+    \small
+    \setlength{\tabcolsep}{3pt}
+    \renewcommand{\arraystretch}{1.15}
+    \begin{tabularx}{\linewidth}{|>{\centering\arraybackslash}p{0.18\linewidth}|>{\centering\arraybackslash}X|>{\centering\arraybackslash}p{0.16\linewidth}|}
+        \hline
+        \textbf{Symbol} & \textbf{Reward Component} & \textbf{Reward Weight} \\ \hline
+        \multicolumn{3}{|c|}{
+            \textbf{Primary Reward Components}} \\ \hline
+        $R_k^{\mathrm{req}}$
+            & Completed Request Reward & $+1.0$ \\ \hline
+        $M_j$
+            & Deadline Miss & $-3.0$ \\ \hline
+        $O_j$
+            & Deadline Overrun & $-1.5$ \\ \hline
+        $L_j$
+            & Request Completion Latency & $-0.3$ \\ \hline
+        \multicolumn{3}{|c|}{
+            \textbf{Auxiliary Reward Components}} \\ \hline
+        $B_k$
+            & Background CPU Service (ms) & $+0.12$ \\ \hline
+        $W_k$
+            & Runnable Waiting Time (ms) & $-0.015$ \\ \hline
+        $U_k$
+            & Wakeup-to-run Latency (ms) & $-0.04$ \\ \hline
+        $H_k$
+            & Context Switch Overhead (ms) & $-0.12$ \\ \hline
+        $N_k^{\mathrm{switch}}$
+            & Context Switch Count & $-0.003$ \\ \hline
+        $R_k^{\mathrm{end}}$
+            & Unfinished Work Penalty & $+1.0$ \\ \hline
+    \end{tabularx}
+    \caption{Reward components and their weights.}
+    \label{tab:reward_components}
+\end{table}
+
 \subsection{Reward: Deadline-oriented Optimization}
 % - Reward function 전체 공식 설명
 % - Deadline Miss, Deadline Overrun, Request Completion Latency 구성요소 설명 하면서 Deadline miss만 최적화 하면 안되는 이유 간단 설명.
@@ -474,43 +512,7 @@ Scheduling Decision Step $k$부터 다음 Step까지
     \label{eq:request_reward_sum}
 \end{equation}
 
-\begin{table}[t]
-    \centering
-    \small
-    \setlength{\tabcolsep}{3pt}
-    \renewcommand{\arraystretch}{1.15}
-    \begin{tabularx}{\linewidth}{|>{\centering\arraybackslash}p{0.18\linewidth}|>{\centering\arraybackslash}X|>{\centering\arraybackslash}p{0.16\linewidth}|}
-        \hline
-        \textbf{Symbol} & \textbf{Reward Component} & \textbf{Reward Weight} \\ \hline
-        \multicolumn{3}{|c|}{
-            \textbf{Primary Reward Components}} \\ \hline
-        $R_k^{\mathrm{req}}$
-            & Completed Request Reward & $+1.0$ \\ \hline
-        $M_j$
-            & Deadline Miss & $-3.0$ \\ \hline
-        $O_j$
-            & Deadline Overrun & $-1.5$ \\ \hline
-        $L_j$
-            & Request Completion Latency & $-0.3$ \\ \hline
-        \multicolumn{3}{|c|}{
-            \textbf{Auxiliary Reward Components}} \\ \hline
-        $B_k$
-            & Background CPU Service (ms) & $+0.12$ \\ \hline
-        $W_k$
-            & Runnable Waiting Time (ms) & $-0.015$ \\ \hline
-        $U_k$
-            & Wakeup-to-run Latency (ms) & $-0.04$ \\ \hline
-        $H_k$
-            & Context Switch Overhead (ms) & $-0.12$ \\ \hline
-        $N_k^{\mathrm{switch}}$
-            & Context Switch Count & $-0.003$ \\ \hline
-        $R_k^{\mathrm{end}}$
-            & Unfinished Work Penalty & $+1.0$ \\ \hline
-    \end{tabularx}
-    \caption{Reward components and their weights.}
-    \label{tab:reward_components}
-\end{table}
-
+% \clearpage
 \section{Neural Policy Learning and Distillation}
 % - Scheduling Performance와 Inference Cost의 Trade-off
 % - Teacher-Student 구조의 설계 목적
