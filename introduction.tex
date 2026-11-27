@@ -4,15 +4,15 @@
 \section{Motivation and Challenges}
 Modern Android 시스템에서는 Interactive Applications, Multimedia Processing, 백그라운드 연산 등 다양한 특성을 가진 Workload가 제한된 CPU 자원을 공유한다.
 특히 게임과 영상 스트리밍 등 멀티미디어 Application의 활용이 확대되면서, 사용자 경험(User Experience)은 Multimedia Processing에 관련된 개별 Request가 요구된 시간 안에 완료되는지에 더욱 민감해지고 있다.
-일부 Request가 Deadline을 초과하거나 완료 시간이 크게 지연되면, Frame Drop, 화면 끊김(Stuttering) 등이 발생할 수 있다.
-따라서 Deadline Compliance와 Tail Latency는 Android Application의 responsiveness와 서비스 품질을 평가하는 중요한 성능 지표이다.
+일부 Request가 Deadline을 초과하거나 완료 시간이 크게 지연되면, Frame Drop, 화면 끊김(Stuttering) 등이 발생할 수 있다~\cite{androidrender,zheng2024}.
+따라서 Deadline Compliance와 Tail Latency는 Android Application의 responsiveness와 서비스 품질을 평가하는 중요한 성능 지표이다~\cite{framepacing,dean2013}.
 
-기존 Linux CPU Scheduler인 Completely Fair Scheduler(CFS)와 Earliest Eligible Virtual Deadline First(EEVDF)는 Fairness를 중심으로 Task Ordering을 결정한다.
+기존 Linux CPU Scheduler인 Completely Fair Scheduler(CFS)와 Earliest Eligible Virtual Deadline First(EEVDF)는 Fairness를 중심으로 Task Ordering을 결정한다~\cite{cfs,eevdf_linux}.
 그러나 이러한 기준은 Application Request의 실제 Deadline이나 Task 간 Dependency가 Request Completion Time에 미치는 영향을 직접적으로 반영하지 않는다.
 따라서 유사한 Scheduling Priority를 가진 Task 사이에서도 동적으로 변화하는 Scheduling Urgency를 고려하여 실행 순서를 조정할 필요가 있다.
 
 Task의 Scheduling Urgency는 개별 Task의 특성뿐 아니라 경쟁 Task의 실행 특성, CPU Contention 및 Task 간 Dependency에 따라 달라진다.
-Reinforcement Learning(RL)은 현재 Scheduling Decision이 이후의 Request Completion Latency와 Deadline Miss에 미치는 영향을 Reward를 통해 학습함으로써 이러한 Context-dependent Task Ordering에 대응할 수 있다.
+Reinforcement Learning(RL)은 현재 Scheduling Decision이 이후의 Request Completion Latency와 Deadline Miss에 미치는 영향을 Reward를 통해 학습함으로써 이러한 Context-dependent Task Ordering에 대응할 수 있다~\cite{sutton2018,deeprm,decima}.
 
 이 문제를 해결하는 데에는 두 가지 기술적 어려움이 존재한다.
 

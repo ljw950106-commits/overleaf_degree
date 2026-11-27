@@ -6,7 +6,7 @@
 RL-SchedExt는 Google Pixel 9 Pro XL (Google Tensor G4)의 AOSP Android 15
 (\texttt{android-15.0.0\_r36}) 환경에서 평가하였다. Linux 6.1 기반 Android
 Kernel에 Linux 6.12의 sched\_ext를 Backport하였으며, 해당 환경의 기본
-Fair Scheduler인 CFS를 Baseline으로 사용하였다.
+Fair Scheduler인 CFS를 Baseline으로 사용하였다~\cite{cfs,pixelkernel}.
 EEVDF는 이후 Linux 버전에서 도입된 방식이므로 본 실험의 Baseline에는 포함하지 않았다.
 
 Microbenchmark에서는 Task Ordering의 효과를 독립적으로 평가하고 실험의
@@ -107,7 +107,7 @@ Neural Student는 4--6\,ms 구간에서도 p99를 18.9\% 감소시켰으나,
     \centering
     \includegraphics[width=0.50\linewidth]{Figures/fig2_legend.png}\par\smallskip
     \includegraphics[width=0.65\linewidth]{Figures/fig2_d_mixed_p99_change.png}
-    \caption{Request completion latency p99 by initial deadline budget in Mixed CPU Bursts using all 100 runs. The dashed line is CFS (0\%), and error bars denote bootstrap 95\% confidence intervals. Negative changes indicate lower latency.}
+    \caption{Request completion latency p99 by initial deadline budget in Mixed CPU Bursts using all 100 runs. The dashed line is CFS (0\%), and error bars denote bootstrap 95\% confidence intervals~\cite{bootstrap}. Negative changes indicate lower latency.}
     \label{fig:bimodal-p99-budget}
 \end{figure}
 
@@ -179,11 +179,11 @@ Urgency를 Linear Student보다 효과적으로 추론함을 보여준다.
 
 \section{Macrobenchmark}
 \subsection{Workload and Methodology}
-실제 Android Application에서의 End-to-End 성능을 평가하기 위해 오픈소스 게임 \textit{Mindustry}를 단독으로 실행하였다. Mindustry는 게임 로직 처리와 렌더링이 동시에 수행되는 Android 게임으로, 게임 진행 상태와 사용자 조작에 따라 CPU 부하가 달라질 수 있다.
+실제 Android Application에서의 End-to-End 성능을 평가하기 위해 오픈소스 게임 \textit{Mindustry}를 단독으로 실행하였다~\cite{mindustry}. Mindustry는 게임 로직 처리와 렌더링이 동시에 수행되는 Android 게임으로, 게임 진행 상태와 사용자 조작에 따라 CPU 부하가 달라질 수 있다.
 
 따라서 본 연구에서는 Scheduler 간 비교에서 Workload의 변동성을 최소화하기 위해 사전에 구성된 게임 저장 파일을 활용하였다. 60초 동안 Defense를 하는 시나리오를 수행하였으며, 게임의 시뮬레이션과 화면 갱신이 지속적으로 수행된다.
 
-실험 결과는 60초 Defense 구간에서 수집한 SurfaceFlinger TimeStats를 이용하여 Average FPS와 Frame Interval Percentiles (p50, p95, p99)를 비교하였다. Average FPS는 단위 시간당 화면에 표시되는 프레임 수로, 게임의 전반적인 시각적 부드러움을 나타낸다. Frame Interval은 연속된 프레임의 실제 출력 시각 사이의 간격이며, 큰 Frame Interval은 간헐적인 화면 끊김과 Frame Pacing 불안정성을 나타낸다.
+실험 결과는 60초 Defense 구간에서 수집한 SurfaceFlinger TimeStats를 이용하여 Average FPS와 Frame Interval Percentiles (p50, p95, p99)를 비교하였다. Average FPS는 단위 시간당 화면에 표시되는 프레임 수로, 게임의 전반적인 시각적 부드러움을 나타낸다. Frame Interval은 연속된 프레임의 실제 출력 시각 사이의 간격이며, 큰 Frame Interval은 간헐적인 화면 끊김과 Frame Pacing 불안정성을 나타낸다~\cite{timestats,framepacing}.
 Mindustry와 같이 게임 로직과 렌더링이 지속적으로 수행되는 환경에서는 Average FPS가 유사하더라도 일부 프레임의 출력이 크게 지연되면 시각적 부드러움이 저하될 수 있다. 따라서 Average FPS뿐 아니라 Frame Interval의 Tail Latency를 함께 비교하여 일반적인 출력 성능과 긴 프레임 지연을 구분해 평가하였다.
 
 실험은 CFS와 RL-SchedExt에 대해 각각 10회씩, 총 20회 반복하여 수행하였다. 매 실행마다 Application을 재시작함으로써 이전 실행에서 유지될 수 있는 게임 내부 상태의 영향을 최소화하고자 하였다. 최종 Average FPS와 Frame Interval은 각 Scheduler에서 측정한 10회 결과의 산술평균으로 산출하였다.

@@ -37,7 +37,7 @@ Figure~\ref{fig:system_overview}의 Linux Server에서는 Offline Learning을 �
 Phase 1 (RL Teacher Training)에서는 Workload Generator에서 생성한 Workload를 기반으로 Scheduling Simulator를 구성하고, Simulator와의 상호작용을 통해 RL Teacher의 Scheduling Policy를 학습한다.
 Simulator는 Kernel에서 관측 가능한 State와 Scheduling Decision에 따른 Deadline-oriented Reward를 제공한다.
 Phase 2 (Knowledge Distillation)에서는 Scheduling State Dataset을 학습이 완료된 RL Teacher와 Neural Student에 입력하고, Teacher--Student Knowledge Distillation을 통해 경량 Neural Student를 학습시킨다.
-학습된 Neural Student는 INT8 Quantization을 거쳐 Android Kernel에 배포된다.
+학습된 Neural Student는 INT8 Quantization을 거쳐 Android Kernel에 배포된다~\cite{jacob2018}.
 
 \paragraph{Runtime Inference.}
 Figure~\ref{fig:system_overview}의 Android Device에서는 학습된 Neural Student를 이용하여 Runtime Inference를 수행한다.
@@ -229,7 +229,7 @@ Reward로 구성된 Reinforcement Learning 문제로 정의한다.
 % - 57D State 구성 및 선정 이유
 % - Table: State Feature Definition (자세히 설명하는거는 19D만하고 38D 는 derived했다고 표현.
 RL-SchedExt는 실제 Kernel에서 수집할 수 있는 Runtime Feature를 기반으로 Task의 실행 특성과 현재 Scheduling Context를 표현한다.
-Application Request의 실제 Deadline, Remaining CPU Demand 및 미래 Wakeup 정보는 Runtime State에 포함하지 않는다.
+Application Request의 실제 Deadline, Remaining CPU Demand 및 미래 Wakeup 정보는 Runtime State에 포함하지 않는다~\cite{kaelbling1998}.
 
 State의 Base Feature는 개별 Task의 실행 특성을 나타내는 13개의
 Task Feature와 현재 CPU의 Scheduling 환경을 나타내는 6개의 Global Feature로 구성된다.
@@ -562,7 +562,7 @@ RL Teacher Training에서는 다양한 Scheduling Context에서
 Deadline-oriented Scheduling Policy를 학습하기 위해
 DeepSets 기반의 Actor--Critic Architecture를 사용한다.
 Figure~\ref{fig:teacher_student_architecture}(\subref{fig:actor_critic})는 RL Teacher의
-Network Architecture와 Proximal Policy Optimization (PPO) 기반의 학습 과정을 나타낸다.
+Network Architecture와 Proximal Policy Optimization (PPO) 기반의 학습 과정을 나타낸다~\cite{ppo}.
 
 \paragraph{Actor Network Architecture.}
 Actor는 현재 Runnable Task Set을 입력받아
@@ -633,7 +633,7 @@ Value Head는 현재 Scheduling State에서 기대되는
 \paragraph{PPO-based Policy Optimization.}
 Critic이 추정한 State Value와 Scheduling Simulator에서
 수집된 Reward를 기반으로 Generalized Advantage
-Estimation (GAE)을 수행한다.
+Estimation (GAE)~\cite{gae}을 수행한다.
 이를 통해 Actor의 Scheduling Decision이
 기존 Policy의 기대 결과인 State Value보다 얼마나 좋은지를 나타내는
 Advantage를 예측한다.
@@ -654,7 +654,7 @@ Actor의 Policy를 어떤 방향으로, 얼마나 개선할 것인지 결정한�
 
 여기서 $\eta_k(\theta)$는 새로운 Scheduling Policy와 이전 Scheduling Policy의
 Task Selection 확률 비율이며, $\widehat{A}_k$는 Estimated Advantage,
-$\epsilon$은 PPO Clipping Parameter이다.
+$\epsilon$은 PPO Clipping Parameter이다~\cite{ppo}.
 
 Actor는 높은 Advantage를 가지는 Scheduling Decision의
 선택 확률을 증가시키는 방향으로 학습되며,

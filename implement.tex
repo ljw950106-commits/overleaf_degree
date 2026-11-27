@@ -1,6 +1,6 @@
 \label{sec:implementation}
 
-RL-SchedExt는 Android 15의 Linux 6.1 Kernel에 Backport된 sched\_ext Framework를 기반으로 구현하였다.
+RL-SchedExt는 Android 15의 Linux 6.1 Kernel에 Backport된 sched\_ext Framework를 기반으로 구현하였다~\cite{pixelkernel,schedext}.
 본 구현은 하나의 CPU에서 경쟁하는 Runnable Task Set의 실행 순서에 Neural Student를 적용하며, CPU Selection 및 Load Balancing은 학습 대상에 포함하지 않는다.
 이 Chapter에서는 Runtime State Collection, In-Kernel Neural Inference 및 Task Selection의 구체적인 구현 방법을 설명한다.
 
@@ -107,7 +107,7 @@ eBPF Scheduling Program은 Equation~\ref{eq:urgency_aware_vruntime}에
 Neural Network 연산은 Native Kernel에서 수행하고
 eBPF Scheduling Program은 제한된 수의 Runnable Task에 대한
 Task Selection만 수행하도록 구현하여
-eBPF Verifier의 제약을 충족하도록 하였다.
+eBPF Verifier의 제약을 충족하도록 하였다~\cite{bpfverifier}.
 
 % Implementation note:
 % Native code maintains CFS-style shadow vruntime.
