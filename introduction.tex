@@ -2,26 +2,26 @@
 
 % {\color{blue} CFS가 deadline urgency task 대신 다른 task 수행하는 사례 첨부하면 좋음}
 \section{Motivation and Challenges}
-Modern Android 시스템에서는 interactive applications, multimedia processing,백그라운드 연산 등 다양한 특성을 가진 Workload가 제한된 CPU 자원을 공유한다.
-특히 게임과 영상 스트리밍 등 멀티미디어 application의 활용이 확대되면서, 사용자 경험(User Experience)은 multimedia processing에 관련된 개별 request가 요구된 시간 안에 완료되는지에 더욱 민감해지고 있다.
-일부 request가 deadline을 초과하거나 완료 시간이 크게 지연되면, frame drop, 화면 끊김(Stuttering) 등이 발생할 수 있다.
-따라서 deadline compliance와 tail latency는 Android application의 responsiveness와 서비스 품질을 평가하는 중요한 성능 지표이다.
+Modern Android 시스템에서는 Interactive Applications, Multimedia Processing, 백그라운드 연산 등 다양한 특성을 가진 Workload가 제한된 CPU 자원을 공유한다.
+특히 게임과 영상 스트리밍 등 멀티미디어 Application의 활용이 확대되면서, 사용자 경험(User Experience)은 Multimedia Processing에 관련된 개별 Request가 요구된 시간 안에 완료되는지에 더욱 민감해지고 있다.
+일부 Request가 Deadline을 초과하거나 완료 시간이 크게 지연되면, Frame Drop, 화면 끊김(Stuttering) 등이 발생할 수 있다.
+따라서 Deadline Compliance와 Tail Latency는 Android Application의 responsiveness와 서비스 품질을 평가하는 중요한 성능 지표이다.
 
-기존 Linux CPU Scheduler인 Completely Fair Scheduler(CFS)와 Earliest Eligible Virtual Deadline First(EEVDF)는 fairness를 중심으로 Task Ordering을 결정한다.
-그러나 이러한 기준은 application request의 실제 deadline이나 task 간 dependency가 request completion time에 미치는 영향을 직접적으로 반영하지 않는다.
-따라서 유사한 Scheduling Priority를 가진 task 사이에서도 동적으로 변화하는 Scheduling Urgency를 고려하여 실행 순서를 조정할 필요가 있다.
+기존 Linux CPU Scheduler인 Completely Fair Scheduler(CFS)와 Earliest Eligible Virtual Deadline First(EEVDF)는 Fairness를 중심으로 Task Ordering을 결정한다.
+그러나 이러한 기준은 Application Request의 실제 Deadline이나 Task 간 Dependency가 Request Completion Time에 미치는 영향을 직접적으로 반영하지 않는다.
+따라서 유사한 Scheduling Priority를 가진 Task 사이에서도 동적으로 변화하는 Scheduling Urgency를 고려하여 실행 순서를 조정할 필요가 있다.
 
-Task의 Scheduling Urgency는 개별 task의 특성뿐 아니라 경쟁 task의 실행 특성, CPU contention 및 task 간 dependency에 따라 달라진다.
-Reinforcement Learning(RL)은 현재 Scheduling Decision이 이후의 request latency와 deadline miss에 미치는 영향을 reward를 통해 학습함으로써 이러한 context-dependent Task Ordering에 대응할 수 있다.
+Task의 Scheduling Urgency는 개별 Task의 특성뿐 아니라 경쟁 Task의 실행 특성, CPU Contention 및 Task 간 Dependency에 따라 달라진다.
+Reinforcement Learning(RL)은 현재 Scheduling Decision이 이후의 Request Completion Latency와 Deadline Miss에 미치는 영향을 Reward를 통해 학습함으로써 이러한 Context-dependent Task Ordering에 대응할 수 있다.
 
 이 문제를 해결하는 데에는 두 가지 기술적 어려움이 존재한다.
 
 \begin{itemize}
-    \item Kernel Scheduler는 개별 application request의 실제
-    deadline이나 남은 CPU Demand를 일반적으로 직접 관측할 수 없다.
-    따라서 Scheduling Policy는 Virtual Runtime, CPU 사용 이력,
+    \item Kernel Scheduler는 개별 Application Request의 실제
+    Deadline이나 남은 CPU Demand를 일반적으로 직접 관측할 수 없다.
+    따라서 Scheduling Policy는 Vruntime, CPU 사용 이력,
     Runnable Waiting Time, Wakeup History 등 Kernel에서 관측
-    가능한 정보로부터 task의 상대적인 Scheduling Urgency를 추론해야 한다.
+    가능한 정보로부터 Task의 상대적인 Scheduling Urgency를 추론해야 한다.
 
     \item Context-dependent 판단을 복잡한 Machine Learning
     Model로 수행할 경우 Scheduling Critical Path에 추가적인
@@ -34,9 +34,9 @@ Reinforcement Learning(RL)은 현재 Scheduling Decision이 이후의 request la
 \section{RL-SchedExt Overview}
 
 본 논문에서는 이러한 문제를 해결하기 위해 Simulator-based RL Training과 In-Kernel Neural Inference를 활용하는 CPU Scheduling Framework인 RL-SchedExt를 제안한다.
-핵심 아이디어는 Kernel에서 관측 가능한 Runtime State를 이용하여 각 task의 상대적인 Scheduling Urgency를 추론하고, CFS 기반 Vruntime에 Learned Vruntime Adjustment를 반영한 Urgency-aware Vruntime으로 Task Ordering을 결정하는 것이다.
+핵심 아이디어는 Kernel에서 관측 가능한 Runtime State를 이용하여 각 Task의 상대적인 Scheduling Urgency를 추론하고, CFS 기반 Vruntime에 Learned Vruntime Adjustment를 반영한 Urgency-aware Vruntime으로 Task Ordering을 결정하는 것이다.
 
-실제 Kernel에서 application-level deadline을 직접 관측하기 어렵다는 문제를 해결하기 위해 Scheduling Simulator에서 RL Teacher를 학습한다.
+실제 Kernel에서 Application-level Deadline을 직접 관측하기 어렵다는 문제를 해결하기 위해 Scheduling Simulator에서 RL Teacher를 학습한다.
 또한 Scheduling Critical Path의 연산 비용을 줄이기 위해 Teacher--Student Knowledge Distillation을 통해 경량 Neural Student를 구성한다.
 학습은 실제 Android 배포 이전에 수행하며, Runtime에서는 Neural Student의 Inference 결과를 sched\_ext 기반 Task Selection에 활용한다.
 전체 학습 및 실행 구조는 Section~\ref{sec:design_overview}에서 설명한다.
@@ -44,30 +44,30 @@ Reinforcement Learning(RL)은 현재 Scheduling Decision이 이후의 request la
 \section{Contributions}
 
 RL-SchedExt를 Google Pixel 9 Pro XL의 실제 Android 15 환경에서 평가하였다.
-세 가지 Microbenchmark에서 Neural Student는 CFS 대비 deadline miss를 19.4--26.8\%, Total Deadline Overrun을 4.5--19.3\% 감소시켰으며, 동일한 State와 Action을 사용하는 Linear Student보다 높은 Deadline Compliance를 달성하였다.
-전체 Request Completion Latency p99는 일부 Workload에서 소폭 증가하였으나, Deadline Budget별 분석에서는 짧은 Deadline Budget을 가진 Request의 Latency가 감소하는 경향이 관찰되었다.
+세 가지 Microbenchmark에서 RL-SchedExt는 CFS 대비 Deadline Miss Count를 19.4--26.8\%, Total Deadline Overrun을 4.5--19.3\% 감소시켰다. 또한 동일한 State와 Action을 사용하는 Linear Student와 비교했을 때 Neural Student가 더 높은 Deadline Compliance를 달성하였다.
+전체 Request Completion Latency p99는 일부 Workload에서 소폭 증가하였으나, Deadline Budget별 분석에서는 짧은 Deadline Budget을 가진 Request Completion Latency가 감소하는 경향이 관찰되었다.
 
-실제 Android 게임 \textit{Mindustry}를 이용한 Macrobenchmark에서는 CFS 대비 average FPS를 11.9\% 향상시키고 frame interval p99를 86\,ms에서 66\,ms로 감소시켰다.
+실제 Android 게임 \textit{Mindustry}를 이용한 Macrobenchmark에서는 CFS 대비 Average FPS를 11.9\% 향상시키고 Frame Interval p99를 86\,ms에서 66\,ms로 감소시켰다.
 
 본 논문의 주요 기여는 다음과 같다.
 
 \begin{itemize}
     \item Learning-based Task Ordering:
-    fairness 기반 Task Ordering과 application deadline Compliance
+    Fairness 기반 Task Ordering과 Application Deadline Compliance
     사이의 불일치를 Scheduling 문제로 정의하고,
-    다양한 task 실행 특성과 Dependency가 포함된 Simulator에서
+    다양한 Task 실행 특성과 Dependency가 포함된 Simulator에서
     장기적인 성능을 고려하여 Learned Vruntime Adjustment를
     계산하는 Scheduling Policy를 학습하는 방법을 제시한다.
 
     \item Deployable Nonlinear Scheduling Policy:
-    Offline Teacher--Student Distillation을 통해
-    Runnable task 간 Context를 반영하는 경량 Neural Policy를
-    구성하고, 이를 Native Kernel Inference와 eBPF 기반
+    Offline Learning에서 Knowledge Distillation을 통해
+    Runnable Task Set의 Context를 반영하는 경량 Neural Student를
+    구성하고, 이를 In-Kernel Neural Inference와 eBPF 기반
     Task Selection으로 통합한다.
 
     \item Real-device Evaluation and Policy Analysis:
     실제 Android에서 CFS 및 Linear Student와 비교하여
-    deadline miss와 deadline Overrun의 개선을 정량적으로
-    평가하고, Remaining Deadline에 따른 Learned Vruntime Adjustment
+    Deadline Miss Count와 Total Deadline Overrun의 감소를 정량적으로
+    평가하고, Remaining Deadline에 따른 Relative Learned Vruntime Adjustment
     분석을 통해 학습된 Task Ordering의 특성을 조사한다.
 \end{itemize}
