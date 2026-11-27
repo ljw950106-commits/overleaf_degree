@@ -104,15 +104,10 @@ Weight 기반 CPU Accounting 원리를 적용하여
 다음과 같이 갱신된다.
 
 \begin{equation}
-\begin{gathered}
-    V_i(t+\delta t)
-    =
-    V_i(t)+\delta t\frac{w_0}{w_i}
-    \\
-    \text{(where } w_i:\text{Task }i\text{ weight},
-    \quad w_0:\text{Nice-0 weight)}
-\end{gathered}
+    V_i(t+\delta t) = V_i(t)+\delta t\frac{w_0}{w_i}
 \end{equation}
+
+여기서 $w_i$는 Task $i$의 Scheduling Weight이며, $w_0$는 Nice-0 Weight이다.
 
 Simulation Clock이 진행됨에 따라 Simulator는
 Task Release, Wakeup, Blocking, Task Completion 및
@@ -301,24 +296,11 @@ CFS의 Vruntime 기준 첫 번째와 두 번째 실행 우선순위를
 최종적으로 Task $i$의 State는 다음과 같이 정의된다.
 
 \begin{equation}
-\begin{aligned}
-    \mathbf{s}_i
-    &=
-    \left[
-        \underbrace{\mathbf{x}_i}_{\text{13D Task}},
-        \underbrace{\mathbf{g}}_{\text{6D Global}},
-        \underbrace{
-            \phi(\mathbf{x}_i,\mathbf{g},\mathcal{C})
-        }_{\text{38D Derived}}
-    \right]
-    \in \mathbb{R}^{57}
-    \\
-    \mathcal{C} &: \text{Runnable Task Set}
-    \\
-    \phi &: \text{Context Feature Extraction Function}
-\end{aligned}
-\label{eq:state_representation}
+    \mathbf{s}_i = \left[\underbrace{\mathbf{x}_i}_{\text{13D Task}},\ \underbrace{\mathbf{g}}_{\text{6D Global}},\ \underbrace{\phi(\mathbf{x}_i,\mathbf{g},\mathcal{C})}_{\text{38D Derived}}\right] \in \mathbb{R}^{57}
+    \label{eq:state_representation}
 \end{equation}
+
+여기서 $\mathcal{C}$는 Runnable Task Set이며, $\phi$는 Context Feature Extraction Function이다.
 
 따라서 Neural Student의 57차원 State는 57개의 독립적인
 Kernel 정보를 수집하는 것이 아니라,
@@ -343,14 +325,11 @@ RL-SchedExt의 Action은 현재 Runnable Task Set에서
 기반으로 Learned Vruntime Adjustment($\Delta V_i$)를 계산한다.
 
 \begin{equation}
-\begin{aligned}
-    \Delta V_i &= f_{\theta}(\mathbf{s}_i,\mathcal{C}) \\
-    f_{\theta} &: \text{Learned Scheduling Policy} \\
-    \mathbf{s}_i &: \text{State of Task } i \\
-    \mathcal{C} &: \text{Runnable Task Set}
-\end{aligned}
-\label{eq:learned_adjustment}
+    \Delta V_i = f_{\theta}(\mathbf{s}_i,\mathcal{C})
+    \label{eq:learned_adjustment}
 \end{equation}
+
+여기서 $f_{\theta}$는 Learned Scheduling Policy, $\mathbf{s}_i$는 Task $i$의 State, $\mathcal{C}$는 Runnable Task Set이다.
 
 기존 Virtual Runtime에 Learned Vruntime Adjustment를
 반영한 값을 Urgency-aware Vruntime으로 정의한다.
@@ -397,17 +376,8 @@ Wakeup Latency 및 Scheduling Overhead를 고려하여
 Step Reward를 다음과 같이 정의한다.
 
 \begin{equation}
-\begin{aligned}
-    r_t ={}&
-    R_t^{\mathrm{req}}
-    + \lambda_b B_t
-    - \lambda_w W_t
-    - \lambda_u U_t
-    - \lambda_o O_t
-    - \lambda_s N_t
-    + R_t^{\mathrm{end}}
-\end{aligned}
-\label{eq:total_reward}
+    r_t = R_t^{\mathrm{req}} + \lambda_b B_t - \lambda_w W_t - \lambda_u U_t - \lambda_o O_t - \lambda_s N_t + R_t^{\mathrm{end}}
+    \label{eq:total_reward}
 \end{equation}
 
 Table~\ref{tab:reward_components}는 전체 Reward Function의
@@ -505,31 +475,18 @@ Actor는 현재 Runnable 상태인 Task Set을 입력받아
 각 Task의 57차원 State는 공유된 Task Encoder를 통해
 64차원의 Task Embedding으로 변환된다.
 
- \begin{equation}
- \begin{aligned}
-\mathbf{h}_i^T
-     &= \phi_T(\mathbf{s}_i)
-     \in \mathbb{R}^{64} \\
-     \phi_T &: \text{Task Encoder }
-     (57 \rightarrow 64 \rightarrow 64)
- \end{aligned}
- \end{equation}
+\begin{equation}
+    \mathbf{h}_i^T = \phi_T(\mathbf{s}_i) \in \mathbb{R}^{64}
+\end{equation}
+
+여기서 $\phi_T$는 $57 \rightarrow 64 \rightarrow 64$ 구조의 Task Encoder이다.
 
 각 Task Embedding에 대해 Mean Pooling과 Max Pooling을
 수행하여 전체 Runnable Candidate Task Set의
 특성을 나타내는 128차원의 Set Context를 구성한다.
 
 \begin{equation}
-\begin{aligned}
-    \mathbf{z}^T &=
-    \left[
-        \underset{i\in\mathcal{C}}{\operatorname{Mean}}
-        (\mathbf{h}_i^T),
-        \underset{i\in\mathcal{C}}{\operatorname{Max}}
-        (\mathbf{h}_i^T)
-    \right] \\
-    \mathbf{z}^T &\in \mathbb{R}^{128}
-\end{aligned}
+    \mathbf{z}^T = \left[\underset{i\in\mathcal{C}}{\operatorname{Mean}}(\mathbf{h}_i^T),\ \underset{i\in\mathcal{C}}{\operatorname{Max}}(\mathbf{h}_i^T)\right] \in \mathbb{R}^{128}
 \end{equation}
 
  개별 Task의 Embedding과 전체 Set Context를 결합한
@@ -539,17 +496,10 @@ Priority Head는 개별 Task의 실행 특성과
  Learned Vruntime Adjustment를 계산한다.
 
 \begin{equation}
-\begin{aligned}
-    \Delta V_i^T
-    &=
-    B\tanh\left(
-        \psi_T([\mathbf{h}_i^T,\mathbf{z}^T])
-    \right) \\
-    \psi_T &: \text{Priority Head }
-    (192 \rightarrow 32 \rightarrow 1) \\
-    B &: \text{Adjustment Bound}
-\end{aligned}
+    \Delta V_i^T = B\tanh\left(\psi_T([\mathbf{h}_i^T,\mathbf{z}^T])\right)
 \end{equation}
+
+여기서 $\psi_T$는 $192 \rightarrow 32 \rightarrow 1$ 구조의 Priority Head이며, $B$는 Adjustment Bound이다.
 
 학습 과정에서는 Urgency-aware Vruntime을 기반으로
 각 Task의 선택 확률을 계산한다.
@@ -579,12 +529,10 @@ Value Head는 현재 Scheduling State에서 기대되는
 누적 Reward인 State Value를 추정한다.
 
 \begin{equation}
-\begin{aligned}
-    V_{\omega}(s_t)
-    &= \mathbb{E}_{\pi}[G_t\mid s_t] 
-    G_t &: \text{Discounted Cumulative Reward}
-\end{aligned}
+    V_{\omega}(s_t) = \mathbb{E}_{\pi}[G_t\mid s_t]
 \end{equation}
+
+여기서 $G_t$는 Discounted Cumulative Reward이다.
 
 Critic이 추정한 State Value와 Scheduling Simulator에서
 수집된 Reward를 기반으로 Generalized Advantage
@@ -600,29 +548,14 @@ Actor의 Clipped Policy Objective는 다음과 같으며
 Actor의 Policy를 어떤 방향으로, 얼마나 개선할 것인지 결정한다.
 
 \begin{equation}
-\begin{aligned}
-    J_{\mathrm{PPO}}(\theta)
-    = \mathbb{E}_t \big[
-        \min \big(
-        &\rho_t(\theta)\widehat{A}_t, \\
-        &\operatorname{clip}
-        (\rho_t(\theta),1-\epsilon,1+\epsilon)
-        \widehat{A}_t
-        \big)
-    \big]
-\end{aligned}
+    J_{\mathrm{PPO}}(\theta) = \mathbb{E}_t\left[\min\left(\rho_t(\theta)\widehat{A}_t,\ \operatorname{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)\widehat{A}_t\right)\right]
 \end{equation}
 
 \begin{equation}
-\begin{aligned}
-    \rho_t(\theta)
-    &=
-    \frac{\pi_{\theta}(a_t\mid s_t)}
-         {\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)} \\
-    \widehat{A}_t &: \text{Estimated Advantage} \\
-    \epsilon &: \text{PPO Clipping Parameter}
-\end{aligned}
+    \rho_t(\theta) = \frac{\pi_{\theta}(a_t\mid s_t)}{\pi_{\theta_{\mathrm{old}}}(a_t\mid s_t)}
 \end{equation}
+
+여기서 $\widehat{A}_t$는 Estimated Advantage이며, $\epsilon$은 PPO Clipping Parameter이다.
 
 Actor는 높은 Advantage를 가지는 Scheduling Decision의
 선택 확률을 증가시키는 방향으로 학습되며,
@@ -692,10 +625,7 @@ Teacher와 Student의 Urgency-aware Vruntime은
 각각 다음과 같이 정의된다.
 
 \begin{equation}
-\begin{aligned}
-    V_i^T &= V_i + \Delta V_i^T \\
-    V_i^S &= V_i + \Delta V_i^S
-\end{aligned}
+    V_i^T = V_i + \Delta V_i^T,\qquad V_i^S = V_i + \Delta V_i^S
 \end{equation}
 
 Teacher의 Urgency-aware Vruntime을 기반으로

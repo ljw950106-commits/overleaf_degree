@@ -57,11 +57,7 @@ Request Completion Latency($L_j$), Deadline Miss($M_j$),
 Deadline Overrun($O_j$)은 다음과 같이 표현할 수 있다.
 
 \begin{equation}
-\begin{aligned}
-    L_j &= c_j - a_j, \\
-    M_j &= \mathbf{1}[c_j > d_j], \\
-    O_j &= \max(0, c_j - d_j).
-\end{aligned}
+    L_j = c_j - a_j,\qquad M_j = \mathbf{1}[c_j > d_j],\qquad O_j = \max(0, c_j - d_j).
 \end{equation}
 
 Deadline Miss는 Request가 시간적 제약을 충족하였는지를
