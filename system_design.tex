@@ -5,7 +5,72 @@
 {\color{blue} workload generate figure 필요한가? }
 
 \section{Design Overview}
-%- figure그리기 전체 구조 설명, Offline learning \& Runtime inference
+\label{sec:design_overview}
+
+RL-SchedExt는 Scheduling Policy를 학습하는 Offline Learning
+단계와 학습된 Policy를 실제 CPU Scheduling에 적용하는
+Runtime Inference 단계로 구성된다.
+Offline Learning은 Linux Server에서 수행되며,
+Runtime Inference는 Android Kernel 내부에서 수행된다.
+이러한 구조는 Deadline 기반의 학습 Feedback을 확보하기 어려운
+실제 Kernel 환경에서 학습을 수행할 필요 없이,
+학습된 Scheduling Policy를 적용할 수 있도록 한다.
+
+\paragraph{Offline Learning.}
+Linux Server에서는 다양한 Task의 실행 특성과 의존 관계를
+모사하는 Scheduling Simulator를 이용하여
+Scheduling State와 Action에 따른 실행 결과를 생성한다.
+RL Teacher는 Kernel에서 관측 가능한 Runtime State를 입력받아
+다음 실행할 Task를 선택하며,
+Simulator는 해당 Scheduling Decision에 따른
+Next State와 Deadline-oriented Reward를 제공한다.
+RL Teacher는 이러한 상호작용을 통해
+Scheduling Context에 따른 Task별 Learned Vruntime Adjustment를
+계산하는 Policy를 학습한다.
+실제 Deadline은 Reward 계산에 사용되지만,
+Runtime Policy의 입력에는 포함되지 않는다.
+
+학습된 RL Teacher를 실제 Kernel에 직접 적용하는 대신,
+Teacher--Student Knowledge Distillation을 통해
+경량 Neural Student를 학습시킨다.
+Neural Student는 Teacher의 Task Selection 결과와
+Task별 Learned Vruntime Adjustment를 학습 목표로 사용한다.
+이를 통해 Task 간 상대적인 Scheduling Context를 반영하는
+Nonlinear Policy를 작은 Network로 근사한다.
+학습이 완료된 Neural Student는 INT8 Quantization을 거쳐
+Android Kernel에 배포된다.
+
+\paragraph{Runtime Inference.}
+Android Kernel에서는 Scheduling Event가 발생할 때마다
+Task의 Runtime History를 갱신한다.
+다음 Task를 선택하는 시점에는 Runnable Candidate Task의
+실행 이력과 현재 CPU의 Scheduling Context를 기반으로
+각 Task의 57차원 State를 구성한다.
+Native Kernel에서 실행되는 Neural Student는
+수집된 State를 입력받아 각 Candidate의
+Learned Vruntime Adjustment를 계산한다.
+
+Native Kernel은 각 Task의 CFS 기반 Vruntime에 대응하는 값과
+Learned Vruntime Adjustment를 sched\_ext의
+eBPF Program에 전달한다.
+eBPF Program은 이를 결합하여 Urgency-aware Vruntime을 계산하고,
+가장 작은 값을 가지는 Task의 Index를 Native Kernel에 반환한다.
+Native Kernel은 선택된 Task의 유효성을 검증한 후 Dispatch한다.
+이 과정에서 Learned Vruntime Adjustment는
+Task의 Vruntime Accounting 자체를 변경하지 않으며,
+Task Selection에만 사용된다.
+
+RL-SchedExt는 하나의 CPU에서 경쟁하는 Runnable Task의
+실행 순서를 학습 대상으로 하며,
+Time Slice와 Preemption은 CFS 방식의 Scheduling Mechanism을
+기반으로 처리한다.
+Runtime에서는 RL Teacher, Scheduling Simulator 및
+Reward 계산이 필요하지 않으며,
+고정된 Neural Student의 Network Parameter를 이용하여
+Scheduling Decision을 수행한다.
+
+% TODO: Add an overall architecture figure showing Offline Learning,
+% Model Deployment, and Runtime Inference once the figure is available.
 
 \section{Simulation-based Learning Environment}
 %- Linux Server에서 수행되는 것 설명
