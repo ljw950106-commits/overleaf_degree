@@ -1,8 +1,8 @@
-{\color{blue} 정돈되어있지 않아 정리 및 단어 통일화필요}
+% {\color{blue} 정돈되어있지 않아 정리 및 단어 통일화필요}
 
-{\color{blue} design overview figure 그리기 }
+% {\color{blue} design overview figure 그리기 }
 
-{\color{blue} workload generate figure 필요한가? }
+% {\color{blue} workload generate figure 필요한가? }
 
 \section{Design Overview}
 \label{sec:design_overview}
@@ -597,7 +597,7 @@ Actor의 Clipped Policy Objective는 다음과 같으며
 Actor의 Policy를 어떤 방향으로, 얼마나 개선할 것인지 결정한다.
 
 \begin{equation}
-    J_{\mathrm{PPO}}(\theta) = \mathbb{E}_t\left[\min\left(\rho_t(\theta)\widehat{A}_t,\ \operatorname{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)\widehat{A}_t\right)\right]
+    J_{\mathrm{PPO}}(\theta) = \mathbf{E}_t\left[\min\left(\rho_t(\theta)\widehat{A}_t,\ \operatorname{clip}(\rho_t(\theta),1-\epsilon,1+\epsilon)\widehat{A}_t\right)\right]
 \end{equation}
 
 \begin{equation}
@@ -618,7 +618,6 @@ Value Target 간의 오차를 최소화하도록 학습된다.
 기대 누적 Reward를 최대화하는 Scheduling Policy를
 학습한다.
 
-{\color{blue}왜 8D로 student를 줄였는지 근거 데이터}
 \subsection{Lightweight Neural Student}
 % - Neural Student Architecture
 % - Task Encoder, Set-context Pooling, Priority Head
