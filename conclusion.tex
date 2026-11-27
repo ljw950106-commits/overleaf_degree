@@ -9,8 +9,8 @@ Google Pixel 9 Pro XL의 실제 Android 15 환경에서 수행한 Microbenchmark
 동일한 State와 Action을 사용하는 Linear Student와 비교하였을 때에도 Neural Student는 모든 평가 Workload에서 더 낮은 Deadline Miss와 Total Deadline Overrun을 달성하였다.
 이는 다양한 Scheduling Context에서 Feature 간 Nonlinear 관계를 표현할 수 있는 Network 구조가 Deadline Compliance 향상에 효과적임을 보여준다.
 
-일부 Workload에서 전체 Request Completion Latency p99가 소폭 증가하였으나, Deadline Budget에 따른 분석에서는 상대적으로 긴급한 Request의 Latency가 감소하였다.
-잔여 Deadline과 Learned Vruntime Adjustment의 관계를 분석한 결과, Neural Student는 Linear Student보다 Deadline이 임박한 Task와 상대적으로 여유가 있는 Task 사이에 더 큰 Adjustment 차이를 부여하였다.
+일부 Workload에서 전체 Request Completion Latency p99가 소폭 증가하였으나, Deadline Budget에 따른 분석에서는 상대적으로 짧은 Deadline Budget을 가진 Request의 Latency가 감소하였다.
+Remaining Deadline과 Learned Vruntime Adjustment의 관계를 분석한 결과, Neural Student는 Linear Student보다 Remaining Deadline이 짧은 Request를 처리하는 Task와 상대적으로 Remaining Deadline이 긴 Request를 처리하는 Task 사이에 더 큰 Adjustment 차이를 부여하였다.
 이는 모든 Request의 Latency를 균일하게 감소시키기보다 Scheduling Urgency를 고려하여 CPU 실행 기회를 재분배하는 것이 Deadline Compliance 향상에 중요함을 보여준다.
 
 실제 Android 게임 \textit{Mindustry}에서는 CFS 대비 평균 FPS를 11.9\% 향상시켰으며, 일반적인 Frame 출력 간격을 유지하면서 Frame Interval의 Tail Latency를 감소시켰다.

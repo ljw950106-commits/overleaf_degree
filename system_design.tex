@@ -63,7 +63,7 @@ Runtime에서는 RL Teacher, Scheduling Simulator 및 Reward 계산이 필요하
 %- Randomized Workload Generation 및 json file output.
 실제 시스템에서는 서로 다른 실행 특성과 의존 관계를 가진
 Task들이 제한된 CPU 자원을 공유한다.
-각 Task는 서로 다른 CPU Demand와 Wakeup Pattern을 가지며,
+각 Task는 서로 다른 CPU 실행 특성과 Wakeup Pattern을 가지며,
 일부 Task는 다른 Task의 실행 결과나 공유 자원의 상태에 따라
 실행 가능 여부가 결정된다.
 
@@ -96,12 +96,16 @@ RL-SchedExt는 이러한 Scheduling 상황을 모사하기 위해
     다른 Task의 실행 가능 여부가 결정되는 의존 관계.
 \end{itemize}
 
-각 Task는 CPU Demand, Release Time, Wakeup Interval,
-Scheduling Weight 및 Deadline 등의 속성을 가지며,
-실행 특성에 따라 Blocking 조건과 Dependency가 추가적으로 정의된다.
+Scheduling Simulator는 Task와 Request를 구분하여 관리한다.
+Task는 Scheduling Weight, Vruntime, Wakeup Pattern 및 실행 상태를 가지며,
+Request는 Arrival Time과 Deadline Budget을 가진다.
+Request를 처리하기 위한 CPU Demand는 하나 이상의 Task에 할당되는
+실행 작업으로 표현되며, 실행 특성에 따라 Blocking 조건과
+Task 간 Dependency가 추가적으로 정의된다.
+Absolute Deadline은 Request의 Arrival Time과 Deadline Budget으로부터 결정된다.
 Simulator는 이러한 실행 특성과 의존 관계를 조합하여 하나의 Workload를 구성한다.
-학습 과정에서는 Task의 수, CPU Demand, Release Pattern,
-Deadline 및 Dependency 등을 Randomization하여
+학습 과정에서는 Task의 수, CPU Demand, Request Arrival Pattern,
+Deadline Budget 및 Dependency 등을 Randomization하여
 다양한 CPU 경쟁 상황을 생성한다.
 이러한 Workload Modeling을 통해 RL Policy가 특정
 Application의 실행 패턴에 overfitting되지 않고,
@@ -117,7 +121,7 @@ Dynamics를 기반으로 가상의 CPU와 Task의 실행 상태를
 각 Task를 Scheduling Entity로 표현하고 Simulation Clock을
 진행시키면서 Scheduling State를 갱신한다.
 
-각 Scheduling Entity는 Remaining CPU Demand,
+각 Scheduling Entity는 현재 처리 중인 실행 작업의 Remaining CPU Demand,
 Remaining Slice, Virtual Runtime, Scheduling Weight
 및 Task State 등의 정보를 유지한다.
 
@@ -155,8 +159,10 @@ Weight 기반 CPU Accounting 원리를 적용하여
 Simulation Clock이 진행됨에 따라 Simulator는
 Task Release, Wakeup, Blocking, Task Completion 및
 Slice Expiration 등의 Scheduling Event를 처리한다.
-Remaining CPU Demand($D_i(t)$)가 0에 도달하면 해당 작업이
-완료된 것으로 처리하며, Remaining Slice($S_i(t)$)가 소진되거나
+Remaining CPU Demand($D_i(t)$)가 0에 도달하면 해당 실행 작업이
+완료된 것으로 처리하며, Request Completion은 해당 Request에
+필요한 실행 작업들이 완료되었는지를 기준으로 판단한다.
+Remaining Slice($S_i(t)$)가 소진되거나
 Preemption 조건이 충족되면 새로운 Scheduling Decision을
 수행할 수 있다.
 
@@ -203,12 +209,12 @@ CPU Scheduling은 현재 실행할 Task의 선택이 이후의
 Task State와 CPU 경쟁 상황에 영향을 미치는
 순차적 의사결정 문제이다.
 특히 Task 간 의존 관계가 존재하는 경우,
-특정 Task의 실행 순서는 해당 Task의 Completion Time뿐만
-아니라 다른 Task의 Release Time 및 Deadline 충족 여부에도
-영향을 미친다.
+특정 Task의 실행 순서는 해당 Task가 처리하는 Request의
+Completion Time뿐만 아니라 의존 관계에 있는 다른 Task의 실행 가능 시점과
+관련 Request의 Deadline 충족 여부에도 영향을 미친다.
 
-그러나 실제 Kernel에서는 Application의 Deadline과
-Task의 미래 CPU Demand를 직접 관측하기 어렵다.
+그러나 실제 Kernel에서는 Application Request의 Deadline과
+미래 CPU Demand를 직접 관측하기 어렵다.
 따라서 RL-SchedExt는 Scheduling Simulator에서 제공하는
 Deadline 기반 Performance Feedback을 이용하여,
 Kernel에서 관측 가능한 Runtime State와
@@ -223,7 +229,7 @@ Reward로 구성된 Reinforcement Learning 문제로 정의한다.
 % - 57D State 구성 및 선정 이유
 % - Table: State Feature Definition (자세히 설명하는거는 19D만하고 38D 는 derived했다고 표현.
 RL-SchedExt는 실제 Kernel에서 수집할 수 있는 Runtime Feature를 기반으로 Task의 실행 특성과 현재 Scheduling Context를 표현한다.
-Application의 실제 Deadline, Remaining CPU Demand 및 미래 Wakeup 정보는 Runtime State에 포함하지 않는다.
+Application Request의 실제 Deadline, Remaining CPU Demand 및 미래 Wakeup 정보는 Runtime State에 포함하지 않는다.
 
 State는 개별 Task의 실행 특성을 나타내는 13개의
 Task Feature와 현재 CPU의 Scheduling 환경을 나타내는 6개의 Global Feature로 구성된다.
@@ -239,8 +245,8 @@ Table~\ref{tab:state_features}는 각 Base Feature의
         \hline
         \textbf{Dim.} & \textbf{Feature} & \textbf{Description} \\ \hline
         \multicolumn{3}{|c|}{\textbf{Task Features (13D)}} \\ \hline
-        1 & Vruntime Lag
-          & Vruntime relative to the minimum \\ \hline
+        1 & Vruntime
+          & Virtual runtime expressed relative to a common reference \\ \hline
         1 & Log2 Weight
           & Log-scaled relative scheduling weight \\ \hline
         1 & CPU Utilization
@@ -314,7 +320,7 @@ CPU 자원 경쟁 상황을 나타낸다.
 
 그러나 동일한 Task Feature를 가지더라도
 현재 경쟁하는 다른 Task의 실행 특성에 따라
-해당 Task의 Scheduling Priority는 달라질 수 있다.
+해당 Task의 Scheduling Urgency는 달라질 수 있다.
 예를 들어 동일한 Wakeup Rate를 가진 Task라도
 경쟁 Task 대부분이 CPU-bound인 경우와
 빈번하게 Wakeup하는 Task인 경우에는
@@ -348,7 +354,7 @@ Kernel 정보를 수집하는 것이 아니라,
 Derived Context Feature로 구성된다.
 이러한 State Representation은 개별 Task의 실행 특성과
 Task 간 상대적인 관계를 함께 표현함으로써,
-현재 Scheduling Context에 따른 동적인 Priority Adjustment를
+현재 Scheduling Context에 따른 Learned Vruntime Adjustment를
 학습할 수 있도록 설계되었다.
 
 
@@ -381,12 +387,14 @@ RL-SchedExt의 Action은 현재 Runnable Task Set에서
         _{\text{Vruntime}}
     +
     \underbrace{\Delta V_i}
-        _{\text{Learned Adjustment}}
+        _{\text{Learned Vruntime Adjustment}}
     \label{eq:urgency_aware_vruntime}
 \end{equation}
 
-음의 Adjustment는 Task의 실행 우선순위를 높이며,
-양의 Adjustment는 실행 우선순위를 낮춘다.
+Learned Vruntime Adjustment는 Task의 Scheduling Urgency를
+기존 fairness 기반 Task Ordering에 반영하기 위한 조정값이다.
+다른 조건이 동일할 때 음의 Adjustment는 Task의 Scheduling Priority를
+높이며, 양의 Adjustment는 Scheduling Priority를 낮춘다.
 
 Runtime Inference에서는 Runnable Task Set $\mathcal{C}$ 내에서
 가장 작은 Urgency-aware Vruntime을 가지는 Task를
@@ -402,6 +410,10 @@ Runtime Inference에서는 Runnable Task Set $\mathcal{C}$ 내에서
 Learned Vruntime Adjustment는 기존 Virtual Runtime의
 Accounting 값을 변경하지 않으며,
 Task Selection에만 사용된다.
+본 논문에서는 Scheduling 원리의 설명을 위해 개념적인 Vruntime $V_i$를
+사용한다. 실제 구현에서는 Candidate 전체에 공통된 기준 Vruntime을
+차감한 값을 사용하지만, 동일한 기준값을 차감하므로 Task Ordering은
+변하지 않는다.
 
 \subsection{Reward: Deadline-oriented Optimization}
 % - Reward function 전체 공식 설명
@@ -422,7 +434,7 @@ Step Reward를 다음과 같이 정의한다.
 Table~\ref{tab:reward_components}는 전체 Reward Function의
 각 Component와 적용되는 Weight를 나타낸다.
 
-Request Reward는 개별 Task의 Request가 완료되는 시점에
+Request Reward는 Application Request가 완료되는 시점에
 해당 Request의 실행 결과를 기반으로 계산된다.
 Background에서 정의한 성능 지표를 이용하여
 Request $j$에 대한 Reward를 다음과 같이 정의한다.
@@ -761,4 +773,4 @@ Teacher와 Student의 출력 간 Mean Squared Error
     \label{eq:distillation_loss}
 \end{equation}
 
-두 Loss를 결합함으로써 Neural Student는 개별 Candidate의 Adjustment뿐 아니라 Teacher가 학습한 Task 간 상대적인 Priority 관계를 근사한다. 이는 경량 Network에서도 Teacher의 Context-dependent Task Ordering을 유지하기 위한 것이다.
+두 Loss를 결합함으로써 Neural Student는 개별 Candidate의 Adjustment뿐 아니라 Teacher가 학습한 Task 간 상대적인 Scheduling Priority 관계를 근사한다. 이는 경량 Network에서도 Teacher의 Context-dependent Task Ordering을 유지하기 위한 것이다.

@@ -42,8 +42,10 @@ Application Request의 시간적 제약과 반드시 일치하지 않는다.
 
 \section{Request-Level Deadlines and Task Dependencies}
 
-CPU Scheduler가 관리하는 task와 Application이 처리하는
-Request는 서로 다른 실행 단위이다.
+Task는 CPU Scheduler가 관리하는 실행 단위이며,
+Request는 Application이 완료해야 하는 작업 단위이다.
+Workload는 이러한 Task와 Request 및 이들의 실행 패턴과
+의존 관계를 포함하는 전체 작업 구성을 의미한다.
 하나의 task는 여러 Request를 반복적으로 처리할 수 있으며,
 반대로 하나의 Request가 완료되기 위해 여러 task의 실행과
 Synchronization이 필요할 수도 있다.
@@ -52,7 +54,22 @@ Synchronization이 필요할 수도 있다.
 포함할 수 있다.
 
 Request $j$의 Arrival Time, Completion Time 및
-Absolute Deadline을 각각 $a_j$, $c_j$, $d_j$라고 정의하면,
+Absolute Deadline을 각각 $a_j$, $c_j$, $d_j$라고 정의한다.
+Deadline Budget은 Request의 Arrival Time부터 Absolute Deadline까지
+허용된 전체 시간이며, Remaining Deadline은 현재 시각 $t$에서
+Absolute Deadline까지 남은 시간을 의미한다.
+
+\begin{equation}
+    \mathrm{Deadline\ Budget}_j = d_j-a_j,\qquad
+    \mathrm{Remaining\ Deadline}_j(t) = d_j-t.
+    \label{eq:deadline_times}
+\end{equation}
+
+Deadline Budget은 Request마다 정해지는 값인 반면,
+Remaining Deadline은 시간에 따라 감소하며 Deadline이 지나면 음수가 된다.
+이와 달리 Remaining CPU Demand는 Request를 완료하기 위해
+추가로 필요한 CPU 실행 시간을 의미한다.
+
 Request Completion Latency($L_j$), Deadline Miss($M_j$),
 Deadline Overrun($O_j$)은 다음과 같이 표현할 수 있다.
 
@@ -68,14 +85,18 @@ Request의 실행을 지연시키더라도 추가적인 불이익을 받지 않�
 있으므로, Request Completion Latency와 Deadline Overrun을
 함께 고려할 필요가 있다.
 
-또한 Request의 Deadline과 해당 Request에 관여하는 task의
+본 논문에서 Scheduling Urgency는 Request의 Deadline Compliance를
+향상시키기 위해 해당 Task를 우선 실행할 필요성을 의미한다.
+Scheduling Priority는 Scheduling Policy가 결정하는 상대적인 실행
+우선순위를 의미하므로 Scheduling Urgency와 구분된다.
+Request의 Deadline과 해당 Request에 관여하는 Task의
 Scheduling Urgency는 반드시 일치하지 않는다.
-예를 들어 Deadline이 임박한 Request를 처리하는 task가
+예를 들어 Remaining Deadline이 짧은 Request를 처리하는 task가
 Lock을 기다리고 있다면, 해당 task를 직접 실행하는 대신
 Lock Holder를 먼저 실행하는 것이 Request Completion을
 앞당길 수 있다.
 따라서 task의 Scheduling Urgency는 개별 Request의
-Deadline뿐만 아니라 남은 CPU Demand, task 간 Dependency 및
+Remaining Deadline뿐만 아니라 Remaining CPU Demand, task 간 Dependency 및
 현재의 CPU Contention에 의해서도 결정된다.
 
 
@@ -92,6 +113,11 @@ Kernel Scheduler Core 사이에서 Runnable Task를 관리한다.
 DSQ는 FIFO 또는 Virtual Time 기반의 Priority Queue로
 동작할 수 있으며, 이를 통해 사용자 정의 Scheduling Metric에
 따른 Task Ordering을 구현할 수 있다.
+본 논문에서 Task Ordering은 Task 간 상대적인 실행 순서를,
+Task Selection은 다음 실행할 Task를 선택하는 행위를,
+Task Dispatch는 선택된 Task를 Kernel의 실제 실행 경로에
+반영하는 과정을 의미한다. Scheduling Decision은 이러한 실행 대상에
+대한 Scheduling Policy의 의사결정을 의미한다.
 
 그러나 CPU Scheduling은 빈번하게 수행되는 Kernel Critical
 Path에 해당하므로, Scheduling Policy의 추가적인 연산 비용은
@@ -113,7 +139,7 @@ Action을 결정하고, 그 결과로 주어지는 Reward를 통해
 Policy를 학습하는 방법이다.
 RL의 목적은 개별 Action의 즉각적인 Reward뿐만 아니라
 이후의 누적 Reward를 최대화하는 Policy를 학습하는 것이다.
-CPU Scheduling에서는 현재의 task Selection이 이후 task의
+CPU Scheduling에서는 현재의 Task Selection이 이후 task의
 Waiting Time, Wakeup 및 Request Completion에 연쇄적으로 영향을
 미치므로, RL을 통해 연속적인 Scheduling Decision의
 장기적인 성능 영향을 고려할 수 있다.

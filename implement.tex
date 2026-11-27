@@ -92,11 +92,14 @@ Arithmetic Overflow 또는 유효하지 않은 입력이 검출되면 Inference 
 \paragraph{eBPF Scheduling Decision.}
 RL-SchedExt는 기존 sched\_ext의 Local Dispatch Queue (DSQ)
 선택 경로에 \texttt{rl\_choose} Callback을 추가하였다.
-각 Runnable Task의 CFS 방식 Vruntime에 대응하는 값과
+각 Runnable Task의 Vruntime과
 Neural Student가 계산한 Learned Vruntime Adjustment를
 Native Kernel에서 \texttt{scx\_rl\_pick\_ctx}를 통해
 eBPF Program에 전달한다.
 
+실제 구현에서 전달되는 Vruntime은 공통 기준값을 차감한 값이며,
+논문에서는 Task Ordering을 설명하기 위해 이를 개념적인 Vruntime으로
+표현한다.
 eBPF Program은 Equation~\ref{eq:urgency_aware_vruntime}에
 따라 각 Task의 Vruntime에 Learned Vruntime Adjustment를
 반영하고, Urgency-aware Vruntime이 가장 작은 Task를 선택하여
@@ -110,7 +113,7 @@ eBPF Verifier의 제약을 충족하도록 하였다.
 % Implementation note:
 % Native code maintains CFS-style shadow vruntime.
 % A common vruntime reference is subtracted for comparison.
-% scheduling key = ctx5_native_lag_ns - tiny_corr_ns.
+% Scheduling key = common-reference vruntime - tiny_corr_ns.
 % The paper's Learned Vruntime Adjustment is -tiny_corr_ns.
 % The 8.1x ratio is architectural FC MAC count, not measured instructions.
 
@@ -132,10 +135,11 @@ Runnable Task Set에서 제거되고,
 새로운 Scheduling Decision이 발생한다.
 Task A의 Vruntime이 Task B보다 작다면,
 CFS는 Task A를 다음 실행 대상으로 선택한다.
-그러나 실제로는 Task B가 Task A보다 잔여 Deadline이 짧아
-더 긴급하게 실행되어야 하는 상황일 수 있다.
+그러나 실제로는 Task B가 처리하는 Request의 Remaining Deadline이
+Task A가 처리하는 Request보다 짧아, Task B를 우선 실행하는 것이
+유리한 상황일 수 있다.
 
-Scheduler는 실제 잔여 Deadline을 알 수 없지만,
+Scheduler는 Request의 실제 Remaining Deadline을 알 수 없지만,
 RL-SchedExt는 Runnable 상태인 Task A와 B의
 57차원 State를 수집하고, Neural Student의 Inference를 통해
 각 Task의 Learned Vruntime Adjustment를 계산한다.

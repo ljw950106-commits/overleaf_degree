@@ -9,7 +9,7 @@ Kernel에 Linux 6.12의 sched\_ext를 Backport하였으며, 해당 환경의 기
 fair scheduler인 CFS를 baseline으로 사용하였다.
 EEVDF는 이후 Linux 버전에서 도입된 방식이므로 본 실험의 baseline에는 포함하지 않았다.
 
-Microbenchmark에서는 task ordering의 효과를 독립적으로 평가하고 실험의
+Microbenchmark에서는 Task Ordering의 효과를 독립적으로 평가하고 실험의
 반복성과 측정 결과의 안정성을 확보하기 위해 모든 benchmark worker thread의
 CPU Affinity를 Big Core인 CPU7로 고정하였다. 이를 통해 단일 CPU에서
 경쟁하는 task의 실행 순서를 평가하고, Core 간 Migration 및 이종 Core의
@@ -21,8 +21,8 @@ CPU Affinity를 Big Core인 CPU7로 고정하였다. 이를 통해 단일 CPU에
 Linear Student, 그리고 경량화된 Deep Sets 기반 Neural Student를 적용한
 RL-SchedExt이다. 두 Student는 동일한 57차원 State를 입력받고 Learned
 Vruntime Adjustment를 계산하여 Urgency-aware Vruntime을 기준으로
-task ordering을 결정한다. 따라서 두 Student의 비교를 통해 입력 정보와
-task ordering 방식이 동일한 조건에서 학습된 policy의 표현력이 성능에
+Task Ordering을 결정한다. 따라서 두 Student의 비교를 통해 입력 정보와
+Task Ordering 방식이 동일한 조건에서 학습된 policy의 표현력이 성능에
 미치는 영향을 조사한다.
 
 Macrobenchmark에서는 실제 Android 게임의
@@ -30,7 +30,7 @@ frame 출력 성능을 별도로 평가하였다.
 
 \section{Microbenchmark}
 \subsection{Workloads and Methodology}
-task ordering의 성능을 평가하기 위해 CPU7에서 실행되는 세 가지 Workload를 사용하였다. 
+Task Ordering의 성능을 평가하기 위해 CPU7에서 실행되는 세 가지 Workload를 사용하였다. 
 \begin{itemize}
     \item \textit{Mixed CPU Bursts}: 짧고 빈번한 Wakeup과 긴 CPU Burst를 가진 task가 CPU 자원을 공유하는 상황을 구성한다.
 
@@ -73,7 +73,7 @@ Neural Student는 CFS 대비 Mixed CPU Bursts에서 4.5\%, Lock Dependency에서
 
 Fig.~\ref{fig:sched-microbenchmark}(\subref{fig:sched-p99})에서 RL-SchedExt의 전체 Request Completion Latency p99는 CFS 대비 Mixed CPU Bursts에서 2.1\%, Workload Transition에서 3.4\% 증가하였으며, Lock Dependency에서는 약 0.3\% 감소하였다. 
 
-RL-SchedExt는 모든 Request의 Latency를 균일하게 줄이기보다는 Scheduling Urgency가 높은 task를 먼저 실행하도록 task ordering을 조정한다. 
+RL-SchedExt는 모든 Request의 Latency를 균일하게 줄이기보다는 Scheduling Urgency가 높은 task를 먼저 실행하도록 Task Ordering을 조정한다. 
 그 과정에서 상대적으로 Urgency가 낮은 task의 CPU 실행 기회가 늦어져 일부 Request의 Latency가 증가할 수 있다. 
 이러한 trade-off가 실제 성능에 어떻게 나타나는지 확인하기 위해 다음에서 Deadline Budget별 Request Completion Latency를 분석한다.
 
@@ -87,7 +87,7 @@ RL-SchedExt는 모든 Request의 Latency를 균일하게 줄이기보다는 Sche
 Mixed CPU Bursts를 대상으로 추가 분석을 수행하였다.
 
 각 Scheduler에서 측정한 Request Completion Latency를 실험 종료 후
-해당 Request의 초기 Deadline Budget과 Mapping하였다.
+해당 Request의 Deadline Budget과 Mapping하였다.
 이를 통해 Deadline Budget에 따라 Request를 분류하고,
 각 구간에서 Linear Student와 Neural Student의 p99가
 CFS 대비 얼마나 변화하였는지 비교하였다.
@@ -109,17 +109,17 @@ Neural Student는 4--6\,ms 구간에서도 p99를 18.9\% 감소시켰으나,
     \label{fig:bimodal-p99-budget}
 \end{figure}
 
-이러한 결과는 RL-SchedExt가 짧은 Deadline을 가진 Request의
-Latency를 감소시키는 대신, 상대적으로 긴 Deadline을 가진
+이러한 결과는 RL-SchedExt가 짧은 Deadline Budget을 가진 Request의
+Latency를 감소시키는 대신, 상대적으로 긴 Deadline Budget을 가진
 Request의 Latency를 일부 희생하는 경향을 보여준다.
 즉, RL-SchedExt는 전체 Request Latency를 균일하게 감소시키기보다
-Scheduling Urgency를 고려하여 task ordering을 조정함으로써
+Scheduling Urgency를 고려하여 Task Ordering을 조정함으로써
 deadline compliance를 향상시킨다.
 
-\subsection{Learned Urgency-aware Adjustment}
+\subsection{Analysis of Learned Vruntime Adjustment}
 앞선 실험에서는 Neural Student가 Linear Student보다 높은
 deadline compliance를 달성하였다.
-이러한 성능 차이를 분석하고 task ordering에 비선형 모델이 필요한
+이러한 성능 차이를 분석하고 Task Ordering에 비선형 모델이 필요한
 이유를 확인하기 위해, 두 Student가 task의 Scheduling Urgency를
 얼마나 효과적으로 구분하는지 평가하였다.
 
@@ -127,12 +127,12 @@ deadline compliance를 달성하였다.
 100회의 반복 실험을 수행하였다.
 각 Scheduling Decision에서 Student는 관측 가능한 task의 State를
 기반으로 Learned Vruntime Adjustment를 결정한다.
-그러나 실제 Scheduling 시점에는 application request의 잔여 Deadline을
+그러나 실제 Scheduling 시점에는 Application Request의 Remaining Deadline을
 알 수 없으므로, 각 Decision에서 생성된 Adjustment를 Kernel Trace로
-수집하고 실험 종료 후 해당 task가 처리하던 request의 실제 잔여
-Deadline과 Mapping하였다.
+수집하고 실험 종료 후 해당 Task가 처리하던 Request의 실제
+Remaining Deadline과 Mapping하였다.
 
-Fig.~\ref{fig:deadline-relative-correction}은 실제 잔여 Deadline과
+Fig.~\ref{fig:deadline-relative-correction}은 실제 Remaining Deadline과
 Learned Vruntime Adjustment 사이의 관계를 보여준다.
 동일한 Scheduling Decision에서 경쟁하는 task 간의 상대적인
 우선순위 조정을 비교하기 위해 각 task의 Adjustment에서
@@ -141,24 +141,24 @@ Learned Vruntime Adjustment 사이의 관계를 보여준다.
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.82\linewidth]{Figures/fig3_deadline_adjustment.png}
-  \caption{잔여 Deadline에 따른 상대적 Learned Vruntime Adjustment.
+  \caption{Remaining Deadline에 따른 상대적 Learned Vruntime Adjustment.
   실선은 반복 실험 전체의 평균, 음영은 평균 $\pm$ 1 Standard Deviation,
   오차 막대는 95\% 신뢰구간을 나타낸다.}
   \label{fig:deadline-relative-correction}
 \end{figure}
 
-Neural Student는 잔여 Deadline이 0--1\,ms인 task에 평균
+Neural Student는 처리 중인 Request의 Remaining Deadline이 0--1\,ms인 task에 평균
 $-0.482$\,ms의 상대적 Adjustment를 부여한 반면,
 6--7\,ms인 task에는 $+0.176$\,ms를 부여하였다.
 두 구간의 Adjustment 차이는 0.658\,ms로,
 Linear Student의 0.145\,ms보다 약 4.5배 크게 나타났다.
-이는 Neural Student가 Deadline이 임박한 task와 상대적으로
-Deadline에 여유가 있는 task를 더 명확하게 구분하여
-Vruntime을 조정한다는 것을 보여준다.
+이는 Neural Student가 Remaining Deadline이 짧은 Request를 처리하는 Task와
+상대적으로 Remaining Deadline이 긴 Request를 처리하는 Task 사이에
+더 큰 Learned Vruntime Adjustment 차이를 부여한다는 것을 보여준다.
 이러한 결과는 실제 Deadline 정보가 제공되지 않는 환경에서
 Neural Student가 관측 가능한 State로부터 task의 Scheduling
 Urgency를 Linear Student보다 효과적으로 추론함을 보여준다.
-따라서 RL Teacher가 학습한 context-dependent task ordering
+따라서 RL Teacher가 학습한 context-dependent Task Ordering
 특성을 유지하기 위해서는 단순한 선형 모델보다
 비선형 모델을 사용하는 것이 효과적이다.
 
