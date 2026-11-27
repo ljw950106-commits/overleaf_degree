@@ -125,7 +125,6 @@ Runnable 상태에서 CPU 할당을 기다리고 있는 상황을 가정한다.
 이때 Task C가 Blocking 상태로 전환되면서
 Runnable Task Set에서 제거되고,
 새로운 Scheduling Decision이 발생한다.
-
 Task A의 Vruntime이 Task B보다 작다면,
 CFS는 Task A를 다음 실행 대상으로 선택한다.
 그러나 실제로는 Task B가 Task A보다 잔여 Deadline이 짧아
@@ -135,7 +134,6 @@ Scheduler는 실제 잔여 Deadline을 알 수 없지만,
 RL-SchedExt는 Runnable 상태인 Task A와 B의
 57차원 State를 수집하고, Neural Student의 Inference를 통해
 각 Task의 Learned Vruntime Adjustment를 계산한다.
-
 Task B에 부여된 Learned Vruntime Adjustment에 의해
 Task B의 Urgency-aware Vruntime이 Task A보다 작아지면,
 두 Task의 실행 우선순위가 역전된다.
@@ -143,6 +141,5 @@ Task B의 Urgency-aware Vruntime이 Task A보다 작아지면,
 eBPF Program은 Urgency-aware Vruntime이 가장 작은
 Task B를 선택하고, Native Kernel은 선택된 Task의
 유효성을 검증한 후 Dispatch한다.
-
 결과적으로 CFS와 달리 RL-SchedExt는 상대적으로
 Scheduling Urgency가 높은 Task B를 먼저 실행한다.

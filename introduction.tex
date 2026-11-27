@@ -61,9 +61,11 @@ RL-SchedExt를 Google Pixel 9 Pro XL의 실제 Android 15 환경에서 평가하
 평가 대상은 Linux 6.1 기반 kernel로, 해당 환경의 기본 fair scheduler인
 CFS를 baseline으로 사용하였다.
 EEVDF는 이후 Linux 버전에서 도입된 방식이므로 본 실험의 baseline에는 포함하지 않았다.
+
 Microbenchmark에서는 짧고 빈번한 Wakeup과 긴 CPU Burst가 경쟁하는 상황, Lock을 통해 task 간 Dependency가 발생하는 상황, 그리고 실행 도중 Workload의 특성이 변화하는 상황을 포함한 세 가지 Workload를 평가하였다.
 그 결과 Neural Student는 CFS 대비 deadline miss를 19.4--26.8\%, Total deadline Overrun을 4.5--19.3\% 감소시켰다.
 request Completion Latency p99는 일부 Workload에서 소폭 증가하였다.
+
 특히 \textit{Mixed CPU Bursts}에서는 Deadline Budget이 4\,ms 미만인 Request의
 p99가 25.3\% 감소한 반면, 8\,ms 이상인 Request의 p99는 3.7\% 증가하였다.
 이는 짧은 Deadline 제약을 가진 Request의 Latency를 줄이는 과정에서

@@ -14,7 +14,9 @@ CPU Affinity를 Big Core인 CPU7로 고정하였다. 이를 통해 단일 CPU에
 경쟁하는 task의 실행 순서를 평가하고, Core 간 Migration 및 이종 Core의
 성능 차이에 의한 영향을 배제하였다. 또한 DVFS의 CPU Frequency Governor를
 \texttt{performance}로 설정하여 주파수 변동이 측정 결과에 미치는 영향을
-최소화하였다. 모든 Scheduler에는 동일한 request arrival과 CPU Demand를
+최소화하였다.
+
+모든 Scheduler에는 동일한 request arrival과 CPU Demand를
 정의한 사전 생성 Manifest를 사용하였다.
 
 비교 대상은 CFS, RL Teacher의 policy를 선형 모델로 Distillation한
@@ -23,7 +25,9 @@ RL-SchedExt이다. 두 Student는 동일한 57차원 State를 입력받고 Learn
 Vruntime Adjustment를 계산하여 Urgency-aware Vruntime을 기준으로
 task ordering을 결정한다. 따라서 두 Student의 비교를 통해 입력 정보와
 task ordering 방식이 동일한 조건에서 학습된 policy의 표현력이 성능에
-미치는 영향을 조사한다. Macrobenchmark에서는 실제 Android 게임의
+미치는 영향을 조사한다.
+
+Macrobenchmark에서는 실제 Android 게임의
 frame 출력 성능을 별도로 평가하였다.
 
 \section{Microbenchmark}
@@ -69,6 +73,7 @@ Neural Student는 CFS 대비 Mixed CPU Bursts에서 4.5\%, Lock Dependency에서
 즉, Deadline을 놓친 Request의 개수뿐 아니라 개별 Request가 Deadline을 얼마나 초과했는지도 Scheduling Policy의 성능을 평가하는 데 중요한 요소이다.
 
 Fig.~\ref{fig:sched-microbenchmark}(\subref{fig:sched-p99})에서 RL-SchedExt의 전체 Request Completion Latency p99는 CFS 대비 Mixed CPU Bursts에서 2.1\%, Workload Transition에서 3.4\% 증가하였으며, Lock Dependency에서는 약 0.3\% 감소하였다. 
+
 RL-SchedExt는 모든 Request의 Latency를 균일하게 줄이기보다는 Scheduling Urgency가 높은 task를 먼저 실행하도록 task ordering을 조정한다. 
 그 과정에서 상대적으로 Urgency가 낮은 task의 CPU 실행 기회가 늦어져 일부 Request의 Latency가 증가할 수 있다. 
 이러한 trade-off가 실제 성능에 어떻게 나타나는지 확인하기 위해 다음에서 Deadline Budget별 Request Completion Latency를 분석한다.
@@ -141,7 +146,6 @@ Linear Student의 0.145\,ms보다 약 4.5배 크게 나타났다.
 이는 Neural Student가 Deadline이 임박한 task와 상대적으로
 Deadline에 여유가 있는 task를 더 명확하게 구분하여
 Vruntime을 조정한다는 것을 보여준다.
-
 이러한 결과는 실제 Deadline 정보가 제공되지 않는 환경에서
 Neural Student가 관측 가능한 State로부터 task의 Scheduling
 Urgency를 Linear Student보다 효과적으로 추론함을 보여준다.
@@ -151,10 +155,11 @@ Urgency를 Linear Student보다 효과적으로 추론함을 보여준다.
 
 \section{Macrobenchmark}
 \paragraph{\textbf{Experiment Setup}}
-실제 Android application에서의 End-to-End 성능을 평가하기 위해 오픈소스 게임 \textit{Mindustry}를 단독으로 실행하였다. Mindustry는 게임 로직 처리와 렌더링이 동시에 수행되는 Android 게임으로, 게임 진행 상태와 사용자 조작에 따라 CPU 부하가 달라질 수 있다. 따라서 본 연구에서는 Scheduler 간 비교에서 Workload의 변동성을 최소화하기 위해 사전에 구성된 게임 저장 파일을 활용하였다. 60초 동안 Defense를 하는 시나리오를 수행하였으며, 게임의 시뮬레이션과 화면 갱신이 지속적으로 수행된다.
+실제 Android application에서의 End-to-End 성능을 평가하기 위해 오픈소스 게임 \textit{Mindustry}를 단독으로 실행하였다. Mindustry는 게임 로직 처리와 렌더링이 동시에 수행되는 Android 게임으로, 게임 진행 상태와 사용자 조작에 따라 CPU 부하가 달라질 수 있다.
+
+따라서 본 연구에서는 Scheduler 간 비교에서 Workload의 변동성을 최소화하기 위해 사전에 구성된 게임 저장 파일을 활용하였다. 60초 동안 Defense를 하는 시나리오를 수행하였으며, 게임의 시뮬레이션과 화면 갱신이 지속적으로 수행된다.
 
 실험 결과는 60초 Defense 구간에서 수집한 SurfaceFlinger TimeStats를 이용하여 평균 FPS와 frame interval의 p50, p95, p99 tail latency를 비교하였다. 평균 FPS는 단위 시간당 화면에 표시되는 프레임 수로, 게임의 전반적인 시각적 부드러움을 나타낸다. frame interval은 연속된 프레임의 실제 출력 시각 사이의 간격이며, 큰 frame interval은 간헐적인 화면 끊김과 frame pacing 불안정성을 나타낸다.
-
 Mindustry와 같이 게임 로직과 렌더링이 지속적으로 수행되는 환경에서는 평균 FPS가 유사하더라도 일부 프레임의 출력이 크게 지연되면 시각적 부드러움이 저하될 수 있다. 따라서 평균 FPS뿐 아니라 frame interval의 tail latency를 함께 비교하여 일반적인 출력 성능과 긴 프레임 지연을 구분해 평가하였다.
 
 실험은 CFS와 RL-SchedExt에 대해 각각 10회씩, 총 20회 반복하여 수행하였다. 매 실행마다 application을 재시작함으로써 이전 실행에서 유지될 수 있는 게임 내부 상태의 영향을 최소화하고자 하였다. 최종 average FPS와 frame interval은 각 Scheduler에서 측정한 10회 결과의 산술평균으로 산출하였다.
@@ -185,6 +190,8 @@ Fig.~\ref{fig:mindustry-macro}는 Mindustry 실행 환경에서 CFS와 RL-SchedE
   \vspace{-0.7em}
 \end{figure}
 
-frame interval은 연속된 두 프레임이 화면에 표시되는 시간 간격으로, 높은 백분위수의 값은 게임 실행 중 간헐적으로 발생하는 긴 화면 출력 지연을 나타낸다. 실험 결과, 두 Scheduler의 frame interval p50과 p95는 각각 33\,ms와 50\,ms로 동일하였으나, p99는 CFS의 86\,ms에서 RL-SchedExt의 66\,ms로 감소하여 23.3\%의 tail latency 개선을 보였다. 이는 일반적인 프레임 출력 간격은 유사하게 유지하면서도, 일부 프레임에서 발생하는 긴 출력 지연을 완화하였음을 보여준다.
+frame interval은 연속된 두 프레임이 화면에 표시되는 시간 간격으로, 높은 백분위수의 값은 게임 실행 중 간헐적으로 발생하는 긴 화면 출력 지연을 나타낸다.
+
+실험 결과, 두 Scheduler의 frame interval p50과 p95는 각각 33\,ms와 50\,ms로 동일하였으나, p99는 CFS의 86\,ms에서 RL-SchedExt의 66\,ms로 감소하여 23.3\%의 tail latency 개선을 보였다. 이는 일반적인 프레임 출력 간격은 유사하게 유지하면서도, 일부 프레임에서 발생하는 긴 출력 지연을 완화하였음을 보여준다.
 
 종합하면, RL-SchedExt는 실제 Android gaming Workload에서 average FPS를 향상시키는 동시에 frame interval의 tail latency를 감소시켰다. 이러한 결과는 제안한 Scheduler가 게임의 전반적인 화면 갱신 성능뿐 아니라 간헐적인 화면 끊김(Stuttering)과 관련된 frame pacing 안정성도 개선할 수 있음을 보여준다.
