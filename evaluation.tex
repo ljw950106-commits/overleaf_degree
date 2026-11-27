@@ -94,7 +94,7 @@ Mixed CPU Bursts를 대상으로 추가 분석을 수행하였다.
 각 구간에서 Linear Student와 Neural Student의 p99가
 CFS 대비 얼마나 변화하였는지 비교하였다.
 실험 결과는 100회 반복의 평균으로 산출하였으며,
-오차 막대는 95\% 신뢰구간을 나타낸다.
+오차 막대는 Bootstrap을 이용한 95\% 신뢰구간을 나타낸다~\cite{bootstrap}.
 
 Figure~\ref{fig:bimodal-p99-budget}에서
 Deadline Budget이 4\,ms 미만인 Request의 p99는 CFS 대비
@@ -107,7 +107,7 @@ Neural Student는 4--6\,ms 구간에서도 p99를 18.9\% 감소시켰으나,
     \centering
     \includegraphics[width=0.50\linewidth]{Figures/fig2_legend.png}\par\smallskip
     \includegraphics[width=0.65\linewidth]{Figures/fig2_d_mixed_p99_change.png}
-    \caption{Request completion latency p99 by initial deadline budget in Mixed CPU Bursts using all 100 runs. The dashed line is CFS (0\%), and error bars denote bootstrap 95\% confidence intervals~\cite{bootstrap}. Negative changes indicate lower latency.}
+    \caption{Request completion latency p99 by initial deadline budget in Mixed CPU Bursts using all 100 runs. The dashed line is CFS (0\%), and error bars denote bootstrap 95\% confidence intervals. Negative changes indicate lower latency.}
     \label{fig:bimodal-p99-budget}
 \end{figure}
 

@@ -229,7 +229,8 @@ Reward로 구성된 Reinforcement Learning 문제로 정의한다.
 % - 57D State 구성 및 선정 이유
 % - Table: State Feature Definition (자세히 설명하는거는 19D만하고 38D 는 derived했다고 표현.
 RL-SchedExt는 실제 Kernel에서 수집할 수 있는 Runtime Feature를 기반으로 Task의 실행 특성과 현재 Scheduling Context를 표현한다.
-Application Request의 실제 Deadline, Remaining CPU Demand 및 미래 Wakeup 정보는 Runtime State에 포함하지 않는다~\cite{kaelbling1998}.
+Application Request의 실제 Deadline, Remaining CPU Demand 및 미래 Wakeup 정보는 Runtime State에 포함하지 않는다.
+이는 Agent가 Environment의 전체 State를 직접 관측할 수 없는 부분 관측(Partial Observability) 상황에 해당한다~\cite{kaelbling1998}.
 
 State의 Base Feature는 개별 Task의 실행 특성을 나타내는 13개의
 Task Feature와 현재 CPU의 Scheduling 환경을 나타내는 6개의 Global Feature로 구성된다.
@@ -633,7 +634,7 @@ Value Head는 현재 Scheduling State에서 기대되는
 \paragraph{PPO-based Policy Optimization.}
 Critic이 추정한 State Value와 Scheduling Simulator에서
 수집된 Reward를 기반으로 Generalized Advantage
-Estimation (GAE)~\cite{gae}을 수행한다.
+Estimation (GAE)을 수행한다~\cite{gae}.
 이를 통해 Actor의 Scheduling Decision이
 기존 Policy의 기대 결과인 State Value보다 얼마나 좋은지를 나타내는
 Advantage를 예측한다.
