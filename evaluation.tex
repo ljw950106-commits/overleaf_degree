@@ -51,12 +51,12 @@ Request Completion Latency p99는 전체 Request의
 Arrival Time부터 Completion Time까지의 지연 시간 분포의 99번째
 백분위수로, tail latency 특성을 나타낸다.
 
-\input{plot/rlsched_figures.tex}
-
 \paragraph{\textbf{Deadline Compliance}}
 Fig.~\ref{fig:sched-microbenchmark}(\subref{fig:sched-deadline})은 세 가지 Workload에서 측정한 Scheduler별
 Deadline Miss를 비교한다. Neural Student는 CFS 대비 Mixed CPU Bursts에서 19.4\%, Lock Dependency에서 26.8\%, Workload Transition에서 22.6\%의 Deadline Miss 감소를 보였다. 
 반면 Linear Student의 Deadline Miss 감소율은 동일한 Workload에서 각각 3.3\%, 7.3\%, 8.5\%로 상대적으로 작게 나타났다.
+
+\input{plot/rlsched_figures.tex}
 
 이러한 결과는 Neural Student의 Nonlinear Policy가 평가한 세 가지 Workload 모두에서 Linear Student 및 CFS보다 낮은 Deadline Miss를 달성했음을 보여준다. 
 특히 Mutex를 사용하는 Task 간 의존성이 존재하는 Lock Dependency에서 가장 큰 상대적 개선이 관찰되었다.
@@ -103,15 +103,6 @@ Request의 Latency를 일부 희생하는 경향을 보여준다.
 Scheduling Urgency를 고려하여 task ordering을 조정함으로써
 deadline compliance를 향상시킨다.
 
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.82\linewidth]{Figures/fig3_deadline_adjustment.png}
-  \caption{잔여 Deadline에 따른 상대적 Learned Vruntime Adjustment.
-  실선은 반복 실험 전체의 평균, 음영은 평균 $\pm$ 1 Standard Deviation,
-  오차 막대는 95\% 신뢰구간을 나타낸다.}
-  \label{fig:deadline-relative-correction}
-\end{figure}
-
 \paragraph{\textbf{Deadline-aware Task Ordering}}
 앞선 실험에서는 Neural Student가 Linear Student보다 높은
 deadline compliance를 달성하였다.
@@ -133,6 +124,15 @@ Learned Vruntime Adjustment 사이의 관계를 보여준다.
 동일한 Scheduling Decision에서 경쟁하는 task 간의 상대적인
 우선순위 조정을 비교하기 위해 각 task의 Adjustment에서
 전체 Candidate의 평균 Adjustment를 차감하였다.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{Figures/fig3_deadline_adjustment.png}
+  \caption{잔여 Deadline에 따른 상대적 Learned Vruntime Adjustment.
+  실선은 반복 실험 전체의 평균, 음영은 평균 $\pm$ 1 Standard Deviation,
+  오차 막대는 95\% 신뢰구간을 나타낸다.}
+  \label{fig:deadline-relative-correction}
+\end{figure}
 
 Neural Student는 잔여 Deadline이 0--1\,ms인 task에 평균
 $-0.482$\,ms의 상대적 Adjustment를 부여한 반면,
@@ -161,7 +161,10 @@ Mindustry와 같이 게임 로직과 렌더링이 지속적으로 수행되는 �
 실험은 CFS와 RL-SchedExt에 대해 각각 10회씩, 총 20회 반복하여 수행하였다. 매 실행마다 application을 재시작함으로써 이전 실행에서 유지될 수 있는 게임 내부 상태의 영향을 최소화하고자 하였다. 최종 average FPS와 frame interval은 각 Scheduler에서 측정한 10회 결과의 산술평균으로 산출하였다.
 
 
-\begin{figure}[t]
+\paragraph{\textbf{게임 성능 평가 결과}}
+Fig.~\ref{fig:mindustry-macro}는 Mindustry 실행 환경에서 CFS와 RL-SchedExt의 average FPS 및 frame interval을 비교한 결과이다. RL-SchedExt는 평균 FPS 29.62를 기록하여 CFS의 26.47 대비 11.9\% 높은 성능을 보였다. 이는 동일한 게임 시나리오에서 단위 시간당 더 많은 프레임을 출력함으로써 게임의 전반적인 화면 갱신 성능을 향상시켰음을 의미한다.
+
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.40\linewidth]{Figures/fig4_legend.png}\par\smallskip
   \captionsetup[subfigure]{skip=2pt}
@@ -181,9 +184,6 @@ Mindustry와 같이 게임 로직과 렌더링이 지속적으로 수행되는 �
   \label{fig:mindustry-macro}
   \vspace{-0.7em}
 \end{figure}
-
-\paragraph{\textbf{게임 성능 평가 결과}}
-Fig.~\ref{fig:mindustry-macro}는 Mindustry 실행 환경에서 CFS와 RL-SchedExt의 average FPS 및 frame interval을 비교한 결과이다. RL-SchedExt는 평균 FPS 29.62를 기록하여 CFS의 26.47 대비 11.9\% 높은 성능을 보였다. 이는 동일한 게임 시나리오에서 단위 시간당 더 많은 프레임을 출력함으로써 게임의 전반적인 화면 갱신 성능을 향상시켰음을 의미한다.
 
 frame interval은 연속된 두 프레임이 화면에 표시되는 시간 간격으로, 높은 백분위수의 값은 게임 실행 중 간헐적으로 발생하는 긴 화면 출력 지연을 나타낸다. 실험 결과, 두 Scheduler의 frame interval p50과 p95는 각각 33\,ms와 50\,ms로 동일하였으나, p99는 CFS의 86\,ms에서 RL-SchedExt의 66\,ms로 감소하여 23.3\%의 tail latency 개선을 보였다. 이는 일반적인 프레임 출력 간격은 유사하게 유지하면서도, 일부 프레임에서 발생하는 긴 출력 지연을 완화하였음을 보여준다.
 
