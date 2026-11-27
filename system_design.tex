@@ -198,7 +198,7 @@ Table~\ref{tab:state_features}는 각 Base Feature의
     \scriptsize
     \setlength{\tabcolsep}{3pt}
     \renewcommand{\arraystretch}{1.15}
-    \begin{tabular}{|c|l|p{0.45\columnwidth}|}
+    \begin{tabularx}{\linewidth}{|>{\centering\arraybackslash}p{0.08\linewidth}|>{\raggedright\arraybackslash}p{0.32\linewidth}|>{\raggedright\arraybackslash}X|}
         \hline
         \textbf{Dim.} & \textbf{Feature} & \textbf{Description} \\ \hline
         \multicolumn{3}{|c|}{\textbf{Task Features (13D)}} \\ \hline
@@ -260,7 +260,7 @@ Table~\ref{tab:state_features}는 각 Base Feature의
         3 & Second Candidate Difference
           & Feature differences from the second candidate \\ \hline
         \textbf{57} & \multicolumn{2}{|c|}{\textbf{Total}} \\ \hline
-    \end{tabular}
+    \end{tabularx}
     \caption{State representation of RL-SchedExt.}
     \label{tab:state_features}
 \end{table}
