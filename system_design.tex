@@ -1,12 +1,11 @@
 {\color{blue} 정돈되어있지 않아 정리 및 단어 통일화필요}
 
-{\color{blue} design overview figure 그리기 }
-
 {\color{blue} workload generate figure 필요한가? }
 
 \section{Design Overview}
 \label{sec:design_overview}
 
+Figure~\ref{fig:system_overview}는 RL-SchedExt의 전체 System Architecture를 나타낸다.
 RL-SchedExt는 Scheduling Policy를 학습하는 Offline Learning
 단계와 학습된 Policy를 실제 CPU Scheduling에 적용하는
 Runtime Inference 단계로 구성된다.
@@ -16,21 +15,38 @@ Runtime Inference는 Android Kernel 내부에서 수행된다.
 실제 Kernel 환경에서 학습을 수행할 필요 없이,
 학습된 Scheduling Policy를 적용할 수 있도록 한다.
 
+\begin{figure}[H]
+    \centering
+    \IfFileExists{Figures/System_overview.png}{%
+        \includegraphics[width=\linewidth,keepaspectratio]{Figures/System_overview.png}%
+    }{%
+        \fbox{\parbox[c][0.50\linewidth][c]{0.94\linewidth}{%
+            \centering System Overview Figure\\
+            Upload \texttt{Figures/System\_overview.png} to display the figure.}}%
+    }
+    \caption{Overall architecture of RL-SchedExt.
+    Offline learning consists of RL Teacher training and
+    Teacher--Student knowledge distillation on a Linux server.
+    The trained Neural Student is deployed to the Android kernel,
+    where its inference results are used for eBPF-based task selection.}
+    \label{fig:system_overview}
+\end{figure}
+
 \paragraph{Offline Learning.}
-Linux Server에서는 Scheduling Simulator와의 상호작용을 통해 RL Teacher의 Scheduling Policy를 학습한다.
+Figure~\ref{fig:system_overview}의 Linux Server에서는 Offline Learning을 두 단계로 수행한다.
+Phase 1에서는 Workload Generator에서 생성한 Workload를 기반으로 Scheduling Simulator를 구성하고, Simulator와의 상호작용을 통해 RL Teacher의 Scheduling Policy를 학습한다.
 Simulator는 Kernel에서 관측 가능한 State와 Scheduling Decision에 따른 Deadline-oriented Reward를 제공한다.
-학습된 Policy는 Teacher--Student Knowledge Distillation을 통해 경량 Neural Student로 전달되며, Android Kernel에 배포된다.
+Phase 2에서는 Scheduling State Dataset을 학습이 완료된 RL Teacher와 Neural Student에 입력하고, Teacher--Student Knowledge Distillation을 통해 경량 Neural Student를 학습시킨다.
+학습된 Neural Student는 Android Kernel에 배포된다.
 
 \paragraph{Runtime Inference.}
-Android Kernel은 Scheduling Event에 따라 Runtime History를 갱신하고, Task Selection 시점에 Runnable Candidate Task의 State를 구성한다.
+Figure~\ref{fig:system_overview}의 Android Device에서는 학습된 Neural Student를 이용하여 Runtime Inference를 수행한다.
+Native Kernel은 Scheduling Event에 따라 Runtime History를 갱신하고, Task Selection 시점에 $N$개의 Runnable Candidate Task에 대해 각각 57차원의 State를 구성한다.
 Native Kernel의 Neural Student가 각 Candidate의 Learned Vruntime Adjustment를 계산하면, sched\_ext의 eBPF Program은 Urgency-aware Vruntime을 기준으로 다음 Task를 선택한다.
-Native Kernel은 선택 결과를 검증하여 실제 Dispatch에 반영한다.
+Native Kernel은 선택 결과를 검증하여 실제 Dispatch에 반영한다. 이러한 구체적인 Runtime 구현 방법은 다음 Chapter에서 설명한다.
 
 RL-SchedExt의 학습 대상은 하나의 CPU에서 경쟁하는 Runnable Task의 실행 순서이며, Time Slice와 Preemption은 CFS 방식의 Scheduling Mechanism을 기반으로 처리한다.
 Runtime에서는 RL Teacher, Scheduling Simulator 및 Reward 계산이 필요하지 않으며, 학습된 Neural Student의 Network Parameter만 사용한다.
-
-% TODO: Add an overall architecture figure showing Offline Learning,
-% Model Deployment, and Runtime Inference once the figure is available.
 
 \section{Simulation-based Learning Environment}
 %- Linux Server에서 수행되는 것 설명
@@ -471,6 +487,8 @@ Scheduling Decision $t$부터 다음 Scheduling Decision까지
 % - Scheduling Performance와 Inference Cost의 Trade-off
 % - Teacher-Student 구조의 설계 목적
 % - Figure RL Teacher 와 Student network 구조그리기
+Figure~\ref{fig:teacher_student_architecture}는 RL Teacher 학습과 Teacher--Student Knowledge Distillation으로 구성된 두 단계의 Offline Learning 과정을 나타낸다.
+
 \begin{figure}[H]
     \centering
 
@@ -512,7 +530,7 @@ Scheduling Decision $t$부터 다음 Scheduling Decision까지
 RL Teacher는 다양한 Scheduling Context에서
 Deadline-oriented Scheduling Policy를 학습하기 위해
 DeepSets 기반의 Actor--Critic Architecture로 구성된다.
-Figure~\ref{fig:actor_critic}은 RL Teacher의
+Figure~\ref{fig:teacher_student_architecture}(\subref{fig:actor_critic})는 RL Teacher의
 Network Architecture와 PPO 기반의 학습 과정을 나타낸다.
 
 \paragraph{Actor Network Architecture.}
@@ -659,9 +677,9 @@ Kernel 내부에서 Integer 기반의 Inference를 수행한다.
 % - Teacher Policy의 Knowledge Transfer
 % - Distillation Loss 공식
 % - Task 간 상대적인 Priority 관계 학습
-RL-SchedExt는 Knowledge Distillation을 통해
-RL Teacher가 학습한 Scheduling Policy를
-Neural Student로 전달한다.
+Figure~\ref{fig:teacher_student_architecture}(\subref{fig:teacher_student})는
+학습된 RL Teacher의 Scheduling Policy를 Neural Student로 전달하는
+Knowledge Distillation 과정을 나타낸다.
 학습이 완료된 RL Teacher의 Network Parameter를
 고정한 상태에서 Teacher와 Student에 동일한
 Scheduling State를 입력한다.
