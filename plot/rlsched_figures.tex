@@ -22,13 +22,6 @@
     \caption{Request p99}
     \label{fig:sched-p99}
   \end{subfigure}
-  \hspace{2pt}%
-  \begin{subfigure}[b]{0.4\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{Figures/fig2_d_mixed_p99_change.png}
-    \caption{Mixed p99 change}
-    \label{fig:bimodal-p99-budget}
-  \end{subfigure}
-  \caption{Microbenchmark results on Pixel CPU7. Panels (a)--(c) compare Mixed CPU Bursts (Mixed), Lock Dependency (Lock), and Workload Transition (Transition) using 90 of 100 runs after metric-wise two-sided trimming. Error bars in (a)--(c) denote sample standard deviations. Arrows indicate changes relative to CFS. Panel (d) compares p99 by initial deadline budget in Mixed CPU Bursts using all 100 runs; the dashed line is CFS (0\%), and error bars denote bootstrap 95\% confidence intervals. Negative changes indicate lower latency.}
+  \caption{Microbenchmark results on Pixel CPU7. Panels (a)--(c) compare Mixed CPU Bursts (Mixed), Lock Dependency (Lock), and Workload Transition (Transition) using 90 of 100 runs after metric-wise two-sided trimming. Error bars in (a)--(c) denote sample standard deviations. Arrows indicate changes relative to CFS.}
   \label{fig:sched-microbenchmark}
 \end{figure}

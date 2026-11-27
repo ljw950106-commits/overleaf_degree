@@ -1,20 +1,23 @@
 % Conclusion
-Modern Android 시스템에서는 multimedia application, interactive application 및 background workload가 제한된 CPU 자원을 공유한다. 특히 게임이나 영상 스트리밍과 같이 시간 제약이 존재하는 application에서는 개별 request의 deadline 준수 여부가 사용자 경험(User Experience)에 직접적인 영향을 미친다. 그러나 기존 Linux CPU Scheduler는 공정성(Fairness)을 중심으로 task의 실행 순서를 결정하며, application request의 실제 deadline이나 task 간 의존성(Dependency)을 직접적인 scheduling 기준으로 활용하지 않는다. 또한 Kernel에서는 application-level deadline을 일반적으로 관측할 수 없으며, 복잡한 Machine Learning Model을 Scheduling Critical Path에서 실행할 경우 추가적인 추론 비용이 발생한다는 기술적 한계가 존재한다.
+\section{Summary of Findings}
 
-본 논문에서는 이러한 문제를 해결하기 위해 강화학습(Reinforcement Learning, RL)과 커널 내 신경망 추론(In-Kernel Neural Inference)을 활용한 긴급도 인식 CPU Scheduling Framework인 RL-SchedExt를 제안하였다. RL-SchedExt의 핵심 아이디어는 Kernel에서 관측 가능한 task의 실행 이력과 Scheduling Context를 기반으로 각 task의 상대적인 Scheduling Urgency를 추론하고, 이를 기존 CFS의 task ordering에 반영하는 것이다. 이를 위해 다양한 task의 실행 특성, CPU 경쟁(Contention), Wakeup 및 task 간 Dependency를 모사하는 Scheduling Simulator를 구성하였다. RL Teacher는 Simulator와의 상호작용을 통해 개별 Scheduling Decision이 이후의 Deadline Miss, Deadline Overrun 및 Request Latency에 미치는 영향을 학습한다. 이러한 방식은 고정된 Scheduling Rule만으로 대응하기 어려운 다양한 Workload에서 문맥 의존적(Context-dependent) Scheduling Policy를 학습할 수 있도록 한다.
+본 논문에서는 Application-level Deadline을 직접 관측하기 어려운 Android 환경에서 기존 fairness 기반 CPU Scheduling을 보완하기 위해 RL-SchedExt를 제안하였다.
+RL-SchedExt는 Scheduling Simulator와의 상호작용을 통해 Task의 실행 특성, CPU 경쟁 및 Task 간 Dependency에 따른 Scheduling Policy를 학습하고, Teacher--Student Knowledge Distillation과 INT8 Quantization을 통해 경량 Neural Student를 구성한다.
+실제 Android Kernel에서는 관측 가능한 Runtime State를 기반으로 Learned Vruntime Adjustment를 계산하고, sched\_ext의 eBPF Program을 통해 Urgency-aware Vruntime에 따른 Task Selection을 수행한다.
 
-학습된 RL Teacher를 실제 Android Kernel에 적용하기 위해 교사-학생 지식 증류(Teacher-Student Knowledge Distillation)를 활용하였다. Neural Student는 RL Teacher의 비선형(Nonlinear) Scheduling Policy를 유지하면서도 Kernel 내부에서 실행할 수 있도록 Network의 크기를 축소하였으며, 추가적으로 8-bit 양자화(Quantization)를 적용하여 Integer 기반의 Inference가 가능하도록 설계하였다. Teacher의 학습과 Knowledge Distillation은 모두 실제 시스템에 배포하기 전에 수행되며, Android Runtime에서는 경량화된 Neural Student의 Inference만 수행한다.
+Google Pixel 9 Pro XL의 실제 Android 15 환경에서 수행한 Microbenchmark에서 RL-SchedExt는 CFS 대비 Deadline Miss를 19.4--26.8\%, Total Deadline Overrun을 4.5--19.3\% 감소시켰다.
+동일한 State와 Action을 사용하는 Linear Student와 비교하였을 때에도 Neural Student는 모든 평가 Workload에서 더 낮은 Deadline Miss와 Total Deadline Overrun을 달성하였다.
+이는 다양한 Scheduling Context에서 Feature 간 Nonlinear 관계를 표현할 수 있는 Network 구조가 Deadline Compliance 향상에 효과적임을 보여준다.
 
-Native Kernel에서는 task별 실행 이력과 CPU의 Global State, 경쟁 중인 task들의 상대적인 특성을 포함하는 57차원 State를 구성한다. Neural Student는 이를 기반으로 Learned Vruntime Adjustment를 계산하고, 기존 CFS 기반 Vruntime에 반영하여 Urgency-aware Vruntime을 생성한다. 이후 sched\_ext의 eBPF 프로그램은 Urgency-aware Vruntime을 기준으로 Task Selection을 수행한다. 이를 통해 기존 fairness 기반 Scheduling 기준을 활용하면서도 Workload의 특성과 추론된 task의 Urgency에 따라 실행 순서를 동적으로 조정할 수 있도록 하였다.
+일부 Workload에서 전체 Request Completion Latency p99가 소폭 증가하였으나, Deadline Budget에 따른 분석에서는 상대적으로 긴급한 Request의 Latency가 감소하였다.
+잔여 Deadline과 Learned Vruntime Adjustment의 관계를 분석한 결과, Neural Student는 Linear Student보다 Deadline이 임박한 Task와 상대적으로 여유가 있는 Task 사이에 더 큰 Adjustment 차이를 부여하였다.
+이는 모든 Request의 Latency를 균일하게 감소시키기보다 Scheduling Urgency를 고려하여 CPU 실행 기회를 재분배하는 것이 Deadline Compliance 향상에 중요함을 보여준다.
 
-RL-SchedExt의 성능은 Google Pixel 9 Pro XL의 실제 Android 15 환경에서 평가하였다. Microbenchmark에서는 서로 다른 CPU Burst를 가진 task가 경쟁하는 환경, Lock에 의해 task 간 Dependency가 발생하는 환경, 그리고 실행 도중 Workload의 특성이 변화하는 환경을 구성하였다. 실험 결과 RL-SchedExt는 기존 CFS 대비 세 가지 Workload에서 Deadline Miss를 19.4–26.8\%, Total Deadline Overrun을 4.5–19.3\% 감소시켰다. 또한 동일한 State와 Action을 사용하는 Linear Student와의 비교에서도 Neural Student가 모든 평가 Workload에서 더 낮은 Deadline Miss와 Total Deadline Overrun을 달성하였다. 이러한 결과는 단순히 강화학습을 통해 Scheduling Policy를 학습하는 것뿐만 아니라, 다양한 Scheduling Context에서 발생하는 Feature 간 비선형 관계를 표현할 수 있는 Network 구조가 Deadline Compliance 향상에 효과적임을 보여준다.
+실제 Android 게임 \textit{Mindustry}에서는 CFS 대비 평균 FPS를 11.9\% 향상시켰으며, 일반적인 Frame 출력 간격을 유지하면서 Frame Interval의 Tail Latency를 감소시켰다.
+이러한 결과는 경량 Nonlinear Neural Policy를 실제 Android Kernel에 통합하여 Application의 Deadline Compliance와 화면 갱신 성능을 개선할 수 있음을 보여준다.
 
-한편 RL-SchedExt는 모든 request의 Latency를 균일하게 감소시키지는 않았다. 일부 Workload에서는 전체 Request Completion Latency p99가 소폭 증가하였으나, Deadline Budget에 따른 추가 분석 결과 상대적으로 긴급한 request의 Latency는 감소하였다. 특히 Mixed CPU Bursts에서 Deadline Budget이 4 ms 미만인 request의 p99는 CFS 대비 25.3\% 감소한 반면, 8 ms 이상인 request의 p99는 3.7\% 증가하였다.
+\section{Limitations and Future Work}
 
-또한 Learned Vruntime Adjustment와 실제 잔여 Deadline 사이의 관계를 분석한 결과, Neural Student는 Linear Student보다 Deadline이 임박한 task와 상대적으로 여유가 있는 task 사이에 더 큰 Vruntime Adjustment 차이를 부여하였다. 이는 명시적인 Deadline 정보가 제공되지 않는 환경에서도 Neural Student가 관측 가능한 State를 활용하여 task의 상대적인 Scheduling Urgency를 구분하는 정책을 학습하였음을 뒷받침한다. 이러한 결과를 통해 전체 Latency의 균일한 감소뿐만 아니라 application request의 시간 제약을 고려한 CPU 실행 기회의 재분배가 Deadline Compliance 향상에 중요함을 확인하였다.
-
-실제 application 수준의 성능 평가를 위해 Android 게임 Mindustry를 이용한 Macrobenchmark를 수행하였다. 동일한 게임 시나리오에서 RL-SchedExt는 CFS 대비 평균 FPS를 11.9\% 향상시켰으며, 일반적인 Frame 출력 간격을 유지하면서 Frame Interval의 Tail Latency를 감소시켰다. 이는 Microbenchmark에서 확인한 Deadline Compliance 개선이 실제 Gaming Workload의 화면 갱신 성능과 Frame Pacing 개선으로 이어질 수 있음을 보여준다.
-
-본 연구는 단일 CPU에서 경쟁하는 task들의 실행 순서 결정에 초점을 두고 있으므로, 향후에는 Multi-core 및 Heterogeneous Multi-core 환경으로 Scheduling Policy를 확장할 필요가 있다. 특히 Task Placement, Core Migration, DVFS 및 전력 소비와 같은 요소를 함께 고려한다면 실제 Mobile System의 다양한 실행 환경에 대응할 수 있을 것으로 기대된다. 또한 평가에 사용된 Workload와 Device의 범위를 확대하여 학습된 Scheduling Policy의 일반화 성능(Generalization Performance)을 검증하고, Kernel 내부의 Inference Overhead와 장기적인 CPU 자원 할당의 Fairness에 대한 추가적인 정량 평가가 필요하다.
-
-종합하면, 본 연구는 application-level deadline을 직접 관측하기 어려운 일반적인 운영체제 환경에서 강화학습 기반의 Scheduling Policy를 활용하여 기존 fairness 중심 CPU Scheduling의 한계를 보완할 수 있음을 보여주었다. 또한 경량 Nonlinear Neural Network를 실제 Android Kernel의 Scheduling 과정에 통합하고, 이를 통해 Deadline Compliance와 실제 application의 성능을 개선할 수 있음을 실험적으로 확인하였다. 본 연구는 Machine Learning 기반 Scheduling Policy가 Simulator에서의 성능 개선에 머무르지 않고 실제 운영체제의 CPU Scheduling에 적용될 수 있는 가능성을 제시한다는 점에서 의의가 있다.
+본 연구는 단일 CPU에서 경쟁하는 Task의 실행 순서 결정에 초점을 두었다.
+향후에는 Multi-core 및 Heterogeneous Multi-core 환경으로 Scheduling Policy를 확장하고, Task Placement, Core Migration, DVFS 및 전력 소비 등을 함께 고려할 필요가 있다.
+또한 평가에 사용된 Workload와 Device의 범위를 확대하여 학습된 Scheduling Policy의 Generalization Performance를 검증하고, Kernel 내부의 Inference Overhead와 장기적인 CPU 자원 할당의 Fairness에 대한 추가적인 정량 평가를 수행할 필요가 있다.

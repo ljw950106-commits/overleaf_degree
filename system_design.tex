@@ -17,57 +17,17 @@ Runtime Inference는 Android Kernel 내부에서 수행된다.
 학습된 Scheduling Policy를 적용할 수 있도록 한다.
 
 \paragraph{Offline Learning.}
-Linux Server에서는 다양한 Task의 실행 특성과 의존 관계를
-모사하는 Scheduling Simulator를 이용하여
-Scheduling State와 Action에 따른 실행 결과를 생성한다.
-RL Teacher는 Kernel에서 관측 가능한 Runtime State를 입력받아
-다음 실행할 Task를 선택하며,
-Simulator는 해당 Scheduling Decision에 따른
-Next State와 Deadline-oriented Reward를 제공한다.
-RL Teacher는 이러한 상호작용을 통해
-Scheduling Context에 따른 Task별 Learned Vruntime Adjustment를
-계산하는 Policy를 학습한다.
-실제 Deadline은 Reward 계산에 사용되지만,
-Runtime Policy의 입력에는 포함되지 않는다.
-
-학습된 RL Teacher를 실제 Kernel에 직접 적용하는 대신,
-Teacher--Student Knowledge Distillation을 통해
-경량 Neural Student를 학습시킨다.
-Neural Student는 Teacher의 Task Selection 결과와
-Task별 Learned Vruntime Adjustment를 학습 목표로 사용한다.
-이를 통해 Task 간 상대적인 Scheduling Context를 반영하는
-Nonlinear Policy를 작은 Network로 근사한다.
-학습이 완료된 Neural Student는 INT8 Quantization을 거쳐
-Android Kernel에 배포된다.
+Linux Server에서는 Scheduling Simulator와의 상호작용을 통해 RL Teacher의 Scheduling Policy를 학습한다.
+Simulator는 Kernel에서 관측 가능한 State와 Scheduling Decision에 따른 Deadline-oriented Reward를 제공한다.
+학습된 Policy는 Teacher--Student Knowledge Distillation을 통해 경량 Neural Student로 전달되며, Android Kernel에 배포된다.
 
 \paragraph{Runtime Inference.}
-Android Kernel에서는 Scheduling Event가 발생할 때마다
-Task의 Runtime History를 갱신한다.
-다음 Task를 선택하는 시점에는 Runnable Candidate Task의
-실행 이력과 현재 CPU의 Scheduling Context를 기반으로
-각 Task의 57차원 State를 구성한다.
-Native Kernel에서 실행되는 Neural Student는
-수집된 State를 입력받아 각 Candidate의
-Learned Vruntime Adjustment를 계산한다.
+Android Kernel은 Scheduling Event에 따라 Runtime History를 갱신하고, Task Selection 시점에 Runnable Candidate Task의 State를 구성한다.
+Native Kernel의 Neural Student가 각 Candidate의 Learned Vruntime Adjustment를 계산하면, sched\_ext의 eBPF Program은 Urgency-aware Vruntime을 기준으로 다음 Task를 선택한다.
+Native Kernel은 선택 결과를 검증하여 실제 Dispatch에 반영한다.
 
-Native Kernel은 각 Task의 CFS 기반 Vruntime에 대응하는 값과
-Learned Vruntime Adjustment를 sched\_ext의
-eBPF Program에 전달한다.
-eBPF Program은 이를 결합하여 Urgency-aware Vruntime을 계산하고,
-가장 작은 값을 가지는 Task의 Index를 Native Kernel에 반환한다.
-Native Kernel은 선택된 Task의 유효성을 검증한 후 Dispatch한다.
-이 과정에서 Learned Vruntime Adjustment는
-Task의 Vruntime Accounting 자체를 변경하지 않으며,
-Task Selection에만 사용된다.
-
-RL-SchedExt는 하나의 CPU에서 경쟁하는 Runnable Task의
-실행 순서를 학습 대상으로 하며,
-Time Slice와 Preemption은 CFS 방식의 Scheduling Mechanism을
-기반으로 처리한다.
-Runtime에서는 RL Teacher, Scheduling Simulator 및
-Reward 계산이 필요하지 않으며,
-고정된 Neural Student의 Network Parameter를 이용하여
-Scheduling Decision을 수행한다.
+RL-SchedExt의 학습 대상은 하나의 CPU에서 경쟁하는 Runnable Task의 실행 순서이며, Time Slice와 Preemption은 CFS 방식의 Scheduling Mechanism을 기반으로 처리한다.
+Runtime에서는 RL Teacher, Scheduling Simulator 및 Reward 계산이 필요하지 않으며, 학습된 Neural Student의 Network Parameter만 사용한다.
 
 % TODO: Add an overall architecture figure showing Offline Learning,
 % Model Deployment, and Runtime Inference once the figure is available.
@@ -76,6 +36,11 @@ Scheduling Decision을 수행한다.
 %- Linux Server에서 수행되는 것 설명
 %- Simulator 기반 학습 선택한 이유 및 장점
 %- 실제 CPU에서의 task execusion과 simulation에서의 차이
+
+실제 Android Kernel에서는 Application Request의 Deadline과 Scheduling Decision의 결과를 학습 Feedback으로 확보하기 어렵다.
+또한 실제 Device에서 다양한 Scheduling Policy를 반복적으로 평가하는 데에는 실행 환경의 변동성과 실험 비용이라는 제약이 존재한다.
+따라서 RL-SchedExt는 Linux Server에서 가상 시간 기반의 Scheduling Simulator를 이용하여 다양한 Workload와 Scheduling Decision에 따른 실행 결과를 생성한다.
+이를 통해 Kernel에서 관측 가능한 State와 Deadline-oriented Reward 사이의 관계를 학습할 수 있는 환경을 구성한다.
 
 \subsection{Workload Modeling}
 %- Task 종류 설명 (CPU-bound, Periodic,...) 및 왜 해당 task 종류로 classification했는지
@@ -197,6 +162,8 @@ Runnable Task Set $\mathcal{R}(t)$에 대해 다음과 같이
 이러한 Scheduling Dynamics를 기반으로 Simulator는
 Task의 실행 순서에 따른 CPU 자원 경쟁, Task 간 의존 관계
 및 Completion Time의 변화를 수치적으로 모사한다.
+
+\subsection{Simulation Scope and Abstraction}
 
 Scheduling Simulator는 실제 CPU의 Cache, Memory Stall,
 Instruction Execution 등의 Microarchitectural Behavior를
@@ -369,7 +336,7 @@ Task 간 상대적인 관계를 함께 표현함으로써,
 학습할 수 있도록 설계되었다.
 
 
-\subsection{Action: Deadline-aware Priority Adjustment}
+\subsection{Action: Urgency-aware Task Ordering}
 % - RL Action 정의
 % - Learned Vruntime Adjustment
 % - Urgency-aware Vruntime 계산 공식 : Vruntime + Learned Vruntime Adjustment
@@ -447,7 +414,7 @@ Request $j$에 대한 Reward를 다음과 같이 정의한다.
 \begin{equation}
     R_j =
     -\underbrace{\alpha M_j}_{\text{Deadline Miss}}
-    -\underbrace{\beta E_j}_{\text{Deadline Overrun}}
+    -\underbrace{\beta O_j}_{\text{Deadline Overrun}}
     -\underbrace{\gamma L_j}_{\text{Request Latency}}
     \label{eq:request_reward}
 \end{equation}
@@ -477,7 +444,7 @@ Scheduling Decision $t$부터 다음 Scheduling Decision까지
             & Completed Request Reward & $+1.0$ \\ \hline
         $M_j$
             & Deadline Miss & $-3.0$ \\ \hline
-        $E_j$
+        $O_j$
             & Deadline Overrun & $-1.5$ \\ \hline
         $L_j$
             & Request Latency & $-0.3$ \\ \hline
@@ -500,7 +467,7 @@ Scheduling Decision $t$부터 다음 Scheduling Decision까지
     \label{tab:reward_components}
 \end{table}
 
-\section{Lightweight Neural Policy Design}
+\section{Neural Policy Learning and Distillation}
 % - Scheduling Performance와 Inference Cost의 Trade-off
 % - Teacher-Student 구조의 설계 목적
 % - Figure RL Teacher 와 Student network 구조그리기
@@ -548,6 +515,7 @@ DeepSets 기반의 Actor--Critic Architecture로 구성된다.
 Figure~\ref{fig:actor_critic}은 RL Teacher의
 Network Architecture와 PPO 기반의 학습 과정을 나타낸다.
 
+\paragraph{Actor Network Architecture.}
 Actor는 현재 Runnable 상태인 Task Set을 입력받아
 각 Task의 Learned Vruntime Adjustment를 계산한다.
 각 Task의 57차원 State는 공유된 Task Encoder를 통해
@@ -579,6 +547,7 @@ Priority Head는 개별 Task의 실행 특성과
 
 여기서 $\psi_T$는 $192 \rightarrow 32 \rightarrow 1$ 구조의 Priority Head이며, $B$는 Adjustment Bound이다.
 
+\paragraph{Stochastic Task Selection.}
 학습 과정에서는 Urgency-aware Vruntime을 기반으로
 각 Task의 선택 확률을 계산한다.
 
@@ -600,6 +569,7 @@ Actor는 해당 확률 분포로부터 실행할 Task를 선택하며,
 Scheduling Simulator는 선택된 Task의 실행 결과를
 기반으로 Next State와 Reward를 생성한다.
 
+\paragraph{Critic Network.}
 Critic은 Actor와 동일한 Scheduling State를 입력받으며,
 독립적인 Task Encoder와 Set-context Pooling을 통해
 전체 Scheduling Context를 구성한다.
@@ -612,6 +582,7 @@ Value Head는 현재 Scheduling State에서 기대되는
 
 여기서 $G_t$는 Discounted Cumulative Reward이다.
 
+\paragraph{PPO-based Policy Optimization.}
 Critic이 추정한 State Value와 Scheduling Simulator에서
 수집된 Reward를 기반으로 Generalized Advantage
 Estimation (GAE)을 수행한다.
@@ -648,7 +619,7 @@ Value Target 간의 오차를 최소화하도록 학습된다.
 학습한다.
 
 {\color{blue}왜 8D로 student를 줄였는지 근거 데이터}
-\subsection{Context-aware Student Policy}
+\subsection{Lightweight Neural Student}
 % - Neural Student Architecture
 % - Task Encoder, Set-context Pooling, Priority Head
 % - Nonlinear Feature Interaction
@@ -772,16 +743,4 @@ Teacher와 Student의 출력 간 Mean Squared Error
     \label{eq:distillation_loss}
 \end{equation}
 
-Task Selection Loss는 Teacher의 Scheduling Decision을
-재현하도록 하며, Adjustment Regression Loss는
-전체 Candidate Task에 대한 Teacher의
-Priority Adjustment를 학습하도록 한다.
-이를 통해 Neural Student는 Teacher가 학습한
-Task 간의 상대적인 Priority 관계를 근사할 수 있다.
-
-Knowledge Distillation 과정에서 RL Teacher의
-Network Parameter는 고정되며,
-Neural Student의 Network Parameter만 업데이트된다.
-학습된 Neural Student는 실제 Device에서
-추가적인 학습 없이 Scheduling Decision을 수행한다.
-
+두 Loss를 결합함으로써 Neural Student는 개별 Candidate의 Adjustment뿐 아니라 Teacher가 학습한 Task 간 상대적인 Priority 관계를 근사한다. 이는 경량 Network에서도 Teacher의 Context-dependent Task Ordering을 유지하기 위한 것이다.

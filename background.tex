@@ -79,54 +79,6 @@ Deadline뿐만 아니라 남은 CPU Demand, task 간 Dependency 및
 현재의 CPU Contention에 의해서도 결정된다.
 
 
-\section{Learning-based Scheduling Techniques}
-
-\textbf{Reinforcement Learning (RL).}
-RL은 Agent가 Environment와 상호작용하면서 State에 따른
-Action을 결정하고, 그 결과로 주어지는 Reward를 통해
-Policy를 학습하는 방법이다.
-RL의 목적은 개별 Action의 즉각적인 Reward뿐만 아니라
-이후의 누적 Reward를 최대화하는 Policy를 학습하는 것이다.
-CPU Scheduling에서는 현재의 task Selection이 이후 task의
-Waiting Time, Wakeup 및 Request Completion에 연쇄적으로 영향을
-미치므로, RL을 통해 연속적인 Scheduling Decision의
-장기적인 성능 영향을 고려할 수 있다.
-
-\textbf{Deep Sets.}
-Deep Sets는 원소의 개수가 가변적이고 입력 순서에 의미가
-없는 집합 형태의 데이터를 처리하기 위한 Neural Network
-Architecture이다.
-각 원소를 공유된 Encoder $\phi$를 통해 개별적으로
-Encoding하고, 이를 순서에 독립적인 Aggregation
-Operation을 통해 하나의 Context로 표현한다.
-
-\begin{equation}
-    z = \rho \left( \sum_{i=1}^{N} \phi(x_i) \right),
-\end{equation}
-
-여기서 $x_i$는 집합의 개별 원소이며, $\rho$는
-Aggregation된 Feature를 변환하는 함수이다.
-이러한 구조는 입력 원소의 개수와 순서가 달라지더라도
-집합 전체의 특성을 고정된 차원의 Representation으로
-표현할 수 있다.
-CPU Scheduling에서는 경쟁하는 Runnable Task의 수가
-동적으로 변화하므로, Deep Sets를 통해 개별 task의
-특성과 경쟁 task들의 Context를 함께 고려할 수 있다.
-
-\textbf{Knowledge Distillation (KD).}
-Knowledge Distillation은 높은 표현력을 가진 Teacher
-Model의 학습된 Knowledge를 상대적으로 경량화된
-Student Model에 전달하는 방법이다.
-Student는 Teacher의 Output 또는 Policy Distribution을
-학습 목표로 사용하여 Teacher의 동작을 근사한다.
-이를 통해 Training 단계에서는 높은 연산 비용을 요구하는
-복잡한 Model을 활용하고, Deployment 단계에서는 제한된
-연산 자원에 적합한 경량 Model을 실행할 수 있다.
-이러한 Training과 Inference의 분리는 실행 비용에
-민감한 CPU Scheduling 환경에서 학습 기반 Policy를
-적용하는 데 유용하다.
-
-
 \section{Extensible Scheduling with sched\_ext}
 
 Linux 6.12에 도입된 sched\_ext는 eBPF 프로그램을 통해
@@ -151,3 +103,51 @@ Path에 해당하므로, Scheduling Policy의 추가적인 연산 비용은
 따라서 학습 기반 Scheduling Policy를 Kernel에 적용하기
 위해서는 Model의 표현력뿐만 아니라 Inference Cost와
 Scheduling Decision의 실행 비용을 함께 고려해야 한다.
+
+
+\section{Learning-based Scheduling Techniques}
+
+\paragraph{Reinforcement Learning (RL).}
+RL은 Agent가 Environment와 상호작용하면서 State에 따른
+Action을 결정하고, 그 결과로 주어지는 Reward를 통해
+Policy를 학습하는 방법이다.
+RL의 목적은 개별 Action의 즉각적인 Reward뿐만 아니라
+이후의 누적 Reward를 최대화하는 Policy를 학습하는 것이다.
+CPU Scheduling에서는 현재의 task Selection이 이후 task의
+Waiting Time, Wakeup 및 Request Completion에 연쇄적으로 영향을
+미치므로, RL을 통해 연속적인 Scheduling Decision의
+장기적인 성능 영향을 고려할 수 있다.
+
+\paragraph{Deep Sets.}
+Deep Sets는 원소의 개수가 가변적이고 입력 순서에 의미가
+없는 집합 형태의 데이터를 처리하기 위한 Neural Network
+Architecture이다.
+각 원소를 공유된 Encoder $\phi$를 통해 개별적으로
+Encoding하고, 이를 순서에 독립적인 Aggregation
+Operation을 통해 하나의 Context로 표현한다.
+
+\begin{equation}
+    z = \rho \left( \sum_{i=1}^{N} \phi(x_i) \right),
+\end{equation}
+
+여기서 $x_i$는 집합의 개별 원소이며, $\rho$는
+Aggregation된 Feature를 변환하는 함수이다.
+이러한 구조는 입력 원소의 개수와 순서가 달라지더라도
+집합 전체의 특성을 고정된 차원의 Representation으로
+표현할 수 있다.
+CPU Scheduling에서는 경쟁하는 Runnable Task의 수가
+동적으로 변화하므로, Deep Sets를 통해 개별 task의
+특성과 경쟁 task들의 Context를 함께 고려할 수 있다.
+
+\paragraph{Knowledge Distillation (KD).}
+Knowledge Distillation은 높은 표현력을 가진 Teacher
+Model의 학습된 Knowledge를 상대적으로 경량화된
+Student Model에 전달하는 방법이다.
+Student는 Teacher의 Output 또는 Policy Distribution을
+학습 목표로 사용하여 Teacher의 동작을 근사한다.
+이를 통해 Training 단계에서는 높은 연산 비용을 요구하는
+복잡한 Model을 활용하고, Deployment 단계에서는 제한된
+연산 자원에 적합한 경량 Model을 실행할 수 있다.
+이러한 Training과 Inference의 분리는 실행 비용에
+민감한 CPU Scheduling 환경에서 학습 기반 Policy를
+적용하는 데 유용하다.
