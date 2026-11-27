@@ -97,12 +97,6 @@ eBPF Program은 Equation~\ref{eq:urgency_aware_vruntime}에
 반영하고, Urgency-aware Vruntime이 가장 작은 Task를 선택하여
 해당 Task의 Index를 Native Kernel에 반환한다.
 
-Scheduling Hot Path에서 Inference Overhead를 줄이기 위해
-경량화된 Neural Student에 INT8 Quantization을 적용하여
-Integer 연산으로 Inference를 수행한다.
-System Design에서 정의한 Network 구조를 기준으로
-Neural Student의 Fully Connected Layer 연산량은
-RL Teacher의 Actor 대비 약 $1/8.1$ 수준이다.
 Neural Network 연산은 Native Kernel에서 수행하고
 eBPF Program은 제한된 수의 Runnable Task에 대한
 Task Selection만 수행하도록 구현하여
@@ -126,30 +120,29 @@ Runnable Task 수가 지원 범위를 초과하거나 State 또는 Inference
 순서에서 과도하게 벗어나는 선택을 제한할 수 있다.
 
 \paragraph{Example of Task Ordering.}
-Runnable 상태인 Task A와 B가 존재하고, Vruntime을 기준으로
-Task A가 Task B보다 먼저 실행될 예정인 상황을 가정한다.
-이때 새로운 Task C가 생성되어 Runnable 상태가 되었으며,
-다음 Scheduling Decision에서 Task C의 Vruntime이
-가장 작은 경우, CFS 방식의 Vruntime 비교에 따른
-실행 우선순위는 C, A, B 순서이다.
+Task C가 CPU에서 실행 중이며, Task A와 B는
+Runnable 상태에서 CPU 할당을 기다리고 있는 상황을 가정한다.
+이때 Task C가 Blocking 상태로 전환되면서
+Runnable Task Set에서 제거되고,
+새로운 Scheduling Decision이 발생한다.
 
-그러나 Task B가 Task A보다 잔여 Deadline이 짧아
+Task A의 Vruntime이 Task B보다 작다면,
+CFS는 Task A를 다음 실행 대상으로 선택한다.
+그러나 실제로는 Task B가 Task A보다 잔여 Deadline이 짧아
 더 긴급하게 실행되어야 하는 상황일 수 있다.
-Scheduler는 실제 잔여 Deadline을 직접 알 수 없지만,
-RL-SchedExt는 세 Task의 57차원 State를 이용하여
-각 Task의 Learned Vruntime Adjustment를 계산한다.
-Neural Student가 Task B의 우선순위를 충분히 높인 결과
-Urgency-aware Vruntime을 기준으로 C, B, A 순서가
-형성되는 상황을 가정한다.
 
-eBPF Program은 가장 작은 Urgency-aware Vruntime을 가지는
-Task C를 선택하고, Native Kernel은 선택된 Task를 검증한 후
-Dispatch한다.
-이후 Task C가 실행을 마치고 Runnable Task Set에서 제거되면,
-다음 Scheduling Decision에서 Task A와 B의 State를 다시 수집하고
-Inference를 수행한다.
-Task B의 Urgency-aware Vruntime이 여전히 Task A보다 작다면
-Task B가 선택되어 Dispatch된다.
-Task B의 실행이 끝난 이후 Task A가 선택되어 실행된다.
-따라서 이러한 상황에서는 CFS의 C, A, B 순서와 달리
-RL-SchedExt는 C, B, A 순서로 Task를 실행할 수 있다.
+Scheduler는 실제 잔여 Deadline을 알 수 없지만,
+RL-SchedExt는 Runnable 상태인 Task A와 B의
+57차원 State를 수집하고, Neural Student의 Inference를 통해
+각 Task의 Learned Vruntime Adjustment를 계산한다.
+
+Task B에 부여된 Learned Vruntime Adjustment에 의해
+Task B의 Urgency-aware Vruntime이 Task A보다 작아지면,
+두 Task의 실행 우선순위가 역전된다.
+
+eBPF Program은 Urgency-aware Vruntime이 가장 작은
+Task B를 선택하고, Native Kernel은 선택된 Task의
+유효성을 검증한 후 Dispatch한다.
+
+결과적으로 CFS와 달리 RL-SchedExt는 상대적으로
+Scheduling Urgency가 높은 Task B를 먼저 실행한다.
