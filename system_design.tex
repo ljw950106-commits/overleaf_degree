@@ -24,11 +24,11 @@ Runtime Inference는 Android Kernel 내부에서 수행된다.
             \centering System Overview Figure\\
             Upload \texttt{Figures/System\_overview.png} to display the figure.}}%
     }
-    \caption{Overall architecture of RL-SchedExt.
-    Offline learning consists of RL Teacher training and
-    teacher--student knowledge distillation on a Linux server.
-    The trained Neural Student is deployed to the Android kernel,
-    where its inference results are used for eBPF-based task selection.}
+    \caption{RL-SchedExt의 전체 System Architecture.
+    Linux Server에서 RL Teacher Training과 Knowledge Distillation을 통해
+    Offline Learning을 수행한다.
+    학습된 Neural Student는 Android Kernel에 배포되며,
+    Inference 결과는 eBPF 기반 Task Selection에 활용된다.}
     \label{fig:system_overview}
 \end{figure}
 
