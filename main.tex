@@ -170,21 +170,32 @@
    %% Number of keywords must be less than 6.
    %% Don't write english letters in the abstract in korean.
     \begin{summary}      
-    메모리 대역폭은 여전히 고성능 GPU 시스템의 주요 병목으로 남아 있다. 이를 완화하기 위해 최신 GPU는 고대역폭 메모리(HBM) 스택의 수와 내부 메모리 대역폭을 지속적으로 증가시키고 있다. 그러나 HBM 내부 대역폭이 증가함에 따라, GPU와 HBM을 연결하는 다이-투-다이(D2D) 인터페이스가 새로운 대역폭 병목으로 부상하고 있다. 본 논문에서는 이러한 병목을 완화하기 위해 HBM shoreline에서 새로운 아키텍처적 기회를 식별하고, 활용되지 않는 메모리 shoreline을 이용하여 HBM들을 직접 연결하는 인패키지 메모리 패브릭, Memory-Fabric을 제안한다. 제안 구조는 HBM 간 D2D 링크를 통해 패키징 제약을 크게 변경하지 않으면서 GPU 내부의 유효 대역폭을 확장한다. 특히 멀티칩렛 GPU에서 GPU 간 이분 대역폭(bisection bandwidth)의 한계를 완화하고, HBM 경로 다양성을 활용하여 메모리 집약적 트래픽을 보다 효율적으로 분산시킨다. 또한 HBM들이 직접 연결됨에 따라, 데이터 이동이 반드시 GPU를 경유하지 않아도 되는 새로운 실행 경로가 가능해진다. 이를 지원하기 위해 본 논문은 HBM 베이스 다이에 통합되는 근접 메모리 데이터 이동 엔진(Data Movement Engine, DME)을 제안한다. DME는 Memory-Fabric의 추가 대역폭을 활용하여 HBM 간 데이터 이동을 오프로딩함으로써 GPU-mediated copy로 인한 대역폭 소모와 데이터 이동 오버헤드를 줄인다. 본 논문은 Memory-Fabric을 구현하기 위해 필요한 HBM 베이스 다이의 구조적 변경과, 데이터 이동 오프로딩을 위한 소프트웨어 인터페이스를 함께 제시한다. 평가 결과, Memory-Fabric 기반 시스템은 추가적인 대역폭과 HBM 경로 다양성을 활용하여 메모리 집약적 워크로드의 성능을 42\% 향상시키며, 데이터 이동 오프로딩을 통해 MoE 워크로드의 성능을 36\% 향상시킨다.
+    Modern Android 시스템에서 multimedia application의 서비스 품질은 개별 request가 요구된 시간 내에 완료되는지에 크게 영향을 받는다. 그러나 기존 CPU Scheduler는 application-level deadline을 직접 관측할 수 없으며, 주로 공정성(Fairness)을 기반으로 task의 실행 순서를 결정한다. 본 논문에서는 이러한 문제를 해결하기 위해 강화학습(Reinforcement Learning, RL)과 커널 내 신경망 추론(In-Kernel Neural Inference)을 활용한 긴급도 인식(Urgency-aware) CPU Scheduling Framework인 RL-SchedExt를 제안한다.
+    
+    RL-SchedExt는 다양한 task의 실행 특성, CPU 경쟁(Contention) 및 task 간 의존성(Dependency)을 모사하는 Scheduling Simulator와의 상호작용을 통해 문맥 의존적(Context-dependent) Scheduling Policy를 학습한다. 학습된 Policy는 교사-학생 지식 증류(Teacher-Student Knowledge Distillation)와 8-bit 양자화(Quantization)를 통해 경량 신경망(Neural Network)으로 변환된다. Runtime에서는 Neural Network가 Kernel에서 관측 가능한 State를 기반으로 각 task의 상대적인 스케줄링 긴급도(Scheduling Urgency)를 추론하고, 실행 가능한(Runnable) task의 가상 실행 시간(Vruntime)을 조정한다. 이를 통해 계산된 긴급도 인식 가상 실행 시간(Urgency-aware Vruntime)은 eBPF 기반 sched\_ext Framework에서 Task Selection에 사용된다.
+    
+    Android 15가 탑재된 Google Pixel 9 Pro XL에서 평가한 결과, RL-SchedExt는 기존 Completely Fair Scheduler(CFS) 대비 Deadline Miss를 19.4–26.8\%, 총 Deadline 초과량(Total Deadline Overrun)을 4.5–19.3\% 감소시켰다. 또한 동일한 State와 Action을 사용하는 조건에서 신경망 기반 정책(Neural Policy)은 선형 정책(Linear Policy)보다 높은 Deadline 준수율(Deadline Compliance)을 달성하였다. 실제 Android Gaming Workload에서는 평균 FPS를 11.9\% 향상시키는 동시에 Frame Interval의 꼬리 지연 시간(Tail Latency)을 감소시켰다. 이러한 결과는 경량 비선형 스케줄링 정책(Nonlinear Scheduling Policy)이 Runtime에서 명시적인 Deadline 정보 없이도 application-level Deadline Compliance를 향상시키는 데 효과적임을 보여준다.
 
     \end{summary}
    
     \begin{Korkeyword}
-    GPU, HBM, 메모리, 인터커넥트
+    강화학습, 중앙처리장치 스케줄링, 긴급도 인식 스케줄링,
+    커널 내 신경망 추론, 지식 증류
     \end{Korkeyword}
 
-
+    \clearpage
     \begin{abstract}
-    As memory bandwidth continues to be a major bottleneck, high-performance architectures such as GPUs maximize the number of high-bandwidth memory (HBM) modules that are attached; however, as internal HBM memory bandwidth continues to increase, the GPU-to-HBM interface is becoming the bandwidth bottleneck. In this work, to address the need for more bandwidth, we identify a new architectural opportunity from the memory or HBM shoreline to enable additional bandwidth within a GPU system. In particular, we propose exploiting  un-utilized memory shoreline to directly interconnect the HBMs together and create an in-package memory fabric built on D2D interconnects. We show how the memory fabric can effectively expand bandwidth within a GPU -- both memory bandwidth and GPU bisection bandwidth. We show how the memory fabric increases GPU bisection bandwidth without modifying packaging constraints and mitigates the bisection bandwidth limitations of multi-chiplet GPU architectures. In addition, since HBMs are directly interconnected, we show how the HBMs can communicate and transfer data without routing through the GPU. To support direct communication, we introduce a near-memory data-movement engine (DME) that reduces data-movement overhead by exploiting the memory fabric’s bandwidth. We describe the architectural changes to the HBM base die to enable the memory fabric and the software interface to enable offloading of communication to the memory fabric.  By exploiting the additional bandwidth and the HBM path diversity provided, memory-fabric based system can improve memory-intensive workloads by 42\% while accelerating MoE workloads by 36\% offloading data movement.
+    The quality of service of multimedia applications on modern Android systems depends on the timely completion of individual requests. However, conventional CPU schedulers determine task execution order primarily based on fairness, without direct knowledge of application-level deadlines. This dissertation presents RL-SchedExt, an urgency-aware CPU scheduling framework that leverages reinforcement learning and in-kernel neural inference.
+    
+    RL-SchedExt learns a context-dependent scheduling policy through interaction with a scheduling simulator that models diverse task execution patterns, CPU contention, and task dependencies. The learned policy is transferred to a lightweight neural network through teacher–student knowledge distillation and 8-bit quantization. During runtime, the neural network infers relative task urgency from kernel-observable states and adjusts the virtual runtime of each runnable task. The resulting urgency-aware virtual runtime is used for task selection through the eBPF-based sched\_ext framework.
+    
+    Evaluation on a Google Pixel 9 Pro XL running Android 15 demonstrates that RL-SchedExt reduces deadline misses by 19.4–26.8\% and total deadline overrun by 4.5–19.3\% compared with the Completely Fair Scheduler (CFS). Furthermore, the neural policy achieves better deadline compliance than its linear counterpart under identical state and action representations. In a real-world Android gaming workload, RL-SchedExt improves average FPS by 11.9\% while reducing frame interval tail latency. These results demonstrate the effectiveness of lightweight nonlinear scheduling policies in improving application-level deadline compliance without explicit deadline information during runtime.
     \end{abstract} 
      
     \begin{Engkeyword}
-    GPU, HBM, Memory, Interconnect
+    Reinforcement Learning, CPU Scheduling,
+    Urgency-Aware Scheduling, In-Kernel Neural Inference,
+    Knowledge Distillation
     \end{Engkeyword}
    
 
@@ -202,7 +213,7 @@
     % % 그림목차 (List of Figures) 생성
     % \listoffigures
 
-    위의 세 종류의 목차는 한꺼번에 다음 명령으로 생성할 수도 있습니다.
+    % 위의 세 종류의 목차는 한꺼번에 다음 명령으로 생성할 수도 있습니다.
     \makecontents
 
 %% 이하의 본문은 LaTeX 표준 클래스 report 양식에 준하여 작성하시면 됩니다.
@@ -225,8 +236,7 @@
 \chapter{Evaluation}
 \input{evaluation}
 
-\chapter{Discussion and Conclusion}
-\input{discussion}
+\chapter{Conclusion}
 \input{conclusion}
 
 
