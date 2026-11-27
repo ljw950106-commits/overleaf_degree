@@ -72,11 +72,11 @@ Time Slice 만료에 따른 Rescheduling을 요청한다.
 
 \paragraph{Runtime State Construction.}
 Task Selection 시점에는 Runqueue Lock을 유지한 상태에서 Runnable Candidate Task의 Runtime History를 Snapshot으로 수집한다.
-Native Kernel의 \texttt{ctx5\_prepare}와 \texttt{ctx5\_build\_prepared\_key}는 Candidate 간 상대적 순위와 통계 정보를 계산하여 Section~\ref{sec:design_overview}에서 소개한 State를 구성한다.
+\newline Native Kernel의 \texttt{ctx5\_prepare}와 \texttt{ctx5\_build\_prepared\_key}는 Candidate 간 상대적 순위와 통계 정보를 계산하여 Section~\ref{sec:design_overview}에서 소개한 State를 구성한다.
 각 Task의 57차원 State는 Q10 Fixed-point 형식의 16-bit Integer 배열로 변환되며, 평가에 사용된 CPU7 구현은 최대 16개의 Candidate를 지원한다.
 
 \paragraph{INT8 Neural Inference.}
-Neural Student의 Inference는 Native Kernel에서 \texttt{ctx5\_tiny\_encode}, \texttt{ctx5\_tiny\_pool}, \texttt{ctx5\_tiny\_heads}의 세 단계로 수행된다.
+Neural Student의 Inference는 Native Kernel에서 \texttt{ctx5\_tiny\_encode}, \newline \texttt{ctx5\_tiny\_pool}, \texttt{ctx5\_tiny\_heads}의 세 단계로 수행된다.
 Task Encoder와 Priority Head의 Weight는 INT8로 저장하고, 각 Fully Connected Layer는 64-bit Integer를 이용하여 입력과 Weight의 곱을 누적한다.
 누적 결과에 Output Channel별 Q24 Scale과 Q10 Bias를 적용하여 Q10 출력으로 변환하며, Nonlinear Activation은 사전 계산된 Tanh 값에 대한 참조를 통해 Integer 연산으로 처리한다.
 
