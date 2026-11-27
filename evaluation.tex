@@ -1,76 +1,3 @@
-% Schbench figure macros (main.tex preamble: graphicx, tikz, pgfplots, compat=1.18)
-\pgfkeys{/sweep/.cd,
-  axis width/.initial=4.0cm,
-  axis height/.initial=3.5cm,
-  bbox width/.initial=3.5cm,
-  bbox height/.initial=2.2cm,
-  xoffset/.initial=0.8cm,
-  yticklabel width/.initial=1.4em,
-}
-
-\pgfplotsset{
-  sweep/.style={
-    width=\pgfkeysvalueof{/sweep/axis width},
-    height=\pgfkeysvalueof{/sweep/axis height},
-    at={(\pgfkeysvalueof{/sweep/xoffset},0cm)},
-    xmin=6, xmax=34,
-    xtick={8,16,24,32},
-    xlabel={},
-    anchor=south west,
-    xlabel style={font=\small},
-    ylabel style={font=\small, align=right},
-    tick label style={font=\small},
-    label style={font=\small},
-    grid=both,
-    grid style={gray!25},
-    every axis plot/.append style={thick},
-  },
-  % 왼쪽 열용: 주축 ylabel 표시 (ylabel은 plot 파일에서 직접 설정)
-  sweepfirst/.style={
-    sweep,
-    % at={(0.7cm,0cm)},
-    yticklabel style={text width=0.55cm, align=right, font=\small},
-  },
-  % 오른쪽 열용: ylabel 없음 (보조축에서 오른쪽에 표시)
-  sweepinner/.style={
-    sweep,
-    at={(0cm,0cm)},
-    ylabel={},
-  },
-  % 보조축 공통 (개선율 막대, 눈금 없음)
-  sweepoverlay/.style={
-    width=\pgfkeysvalueof{/sweep/axis width},
-    height=\pgfkeysvalueof{/sweep/axis height},
-    ymin=-20, ymax=100,
-    ytick={-20,0,50,100},
-    ylabel={},
-    tick label style={font=\small},
-    axis y line*=right,
-    axis x line=none,
-    xmin=6, xmax=34,
-    xtick=\empty,
-    grid=none,
-  },
-  % 오른쪽 열 보조축: 눈금 + ylabel 표시
-  sweepoverlayright/.style={
-    sweepoverlay,
-    ymin=-20, ymax=100,
-    ytick={-20,0,50,100},
-    ylabel={RL-SchedExt\\improvement(\%)},
-    ylabel style={font=\small,align=center},
-  },
-}
-
-\newcommand{\sweepcell}[2]{%
-  \begin{subfigure}[b]{0.48\columnwidth}
-    \centering
-    \input{plot/cfs_schbench_sweep_#1_#2.tex}%
-    \vspace{20pt}%
-    \subcaption{#1 latency (#2)}%
-    \label{fig:sweep-#1-#2}%
-  \end{subfigure}%
-}
-
 \section{Evaluation}
 {\color{blue} 초안 작성 v0.1}
 
@@ -178,10 +105,10 @@ deadline compliance를 향상시킨다.
 
 \begin{figure}[t]
   \centering
-  \input{plot/deadline_relative_correction.tex}
+  \includegraphics[width=0.82\linewidth]{Figures/fig3_deadline_adjustment.png}
   \caption{잔여 Deadline에 따른 상대적 Learned Vruntime Adjustment.
-  각 점은 반복 실험의 구간별 평균이며, 실선은 반복 실험 전체의
-  평균, 오차 막대는 95\% 신뢰구간을 나타낸다.}
+  실선은 반복 실험 전체의 평균, 음영은 평균 $\pm$ 1 Standard Deviation,
+  오차 막대는 95\% 신뢰구간을 나타낸다.}
   \label{fig:deadline-relative-correction}
 \end{figure}
 
@@ -236,21 +163,17 @@ Mindustry와 같이 게임 로직과 렌더링이 지속적으로 수행되는 �
 
 \begin{figure}[t]
   \centering
-  {\scriptsize
-    \tikz[baseline=-0.5ex]\draw[fill=cfsgray, draw=black!75, line width=0.4pt] (0,0) rectangle (0.28,0.16);~CFS\hspace{1.2em}%
-    \tikz[baseline=-0.5ex]\draw[fill=rlnavy, draw=black!75, line width=0.4pt] (0,0) rectangle (0.28,0.16);~RL-SchedExt
-  }\par\vspace{3pt}
-
+  \includegraphics[width=0.40\linewidth]{Figures/fig4_legend.png}\par\smallskip
   \captionsetup[subfigure]{skip=2pt}
-  \begin{subfigure}[b]{0.48\columnwidth}
+  \begin{subfigure}[b]{0.39\linewidth}
     \centering
-    \input{plot/mindustry_fps.tex}
+    \includegraphics[width=\linewidth]{Figures/fig4_a_average_fps.png}
     \subcaption{average FPS ($\uparrow$)}
     \label{fig:mindustry-fps}
   \end{subfigure}\hfill
-  \begin{subfigure}[b]{0.48\columnwidth}
+  \begin{subfigure}[b]{0.575\linewidth}
     \centering
-    \input{plot/mindustry_frame_interval.tex}
+    \includegraphics[width=\linewidth]{Figures/fig4_b_frame_interval.png}
     \subcaption{frame interval ($\downarrow$)}
     \label{fig:mindustry-interval}
   \end{subfigure}
