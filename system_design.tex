@@ -1,19 +1,18 @@
-\section{System Design}
 {\color{blue} 정돈되어있지 않아 정리 및 단어 통일화필요}
 
 {\color{blue} design overview figure 그리기 }
 
-{\color{blue} D. Lightweight Neural Policy Design 완성하기 }
+{\color{blue} workload generate figure 필요한가? }
 
-\subsection{Design Overview}
+\section{Design Overview}
 %- figure그리기 전체 구조 설명, Offline learning \& Runtime inference
 
-\subsection{Simulation-based Learning Environment}
+\section{Simulation-based Learning Environment}
 %- Linux Server에서 수행되는 것 설명
 %- Simulator 기반 학습 선택한 이유 및 장점
 %- 실제 CPU에서의 task execusion과 simulation에서의 차이
 
-\subsubsection{Workload Modeling}
+\subsection{Workload Modeling}
 %- Task 종류 설명 (CPU-bound, Periodic,...) 및 왜 해당 task 종류로 classification했는지
 %- Randomized Workload Generation 및 json file output.
 실제 시스템에서는 서로 다른 실행 특성과 의존 관계를 가진
@@ -65,7 +64,7 @@ Application의 실행 패턴에 overfitting되지 않고,
 다양한 Task 특성과 의존 관계에서 발생하는 Scheduling
 Dynamics를 학습하도록 한다.
 
-\subsubsection{Modeling CFS Scheduling Dynamics}
+\subsection{Modeling CFS Scheduling Dynamics}
 
 Scheduling Simulator는 Linux CFS의 주요 Scheduling
 Dynamics를 기반으로 가상의 CPU와 Task의 실행 상태를
@@ -153,7 +152,7 @@ Task의 실행 상태, CPU 자원 경쟁 및 Task 간 의존 관계를
 Task의 실행 순서에 따른 Deadline Miss 및 Request Latency의
 변화 경향을 학습할 수 있도록 설계하였다.
 
-\subsection{Reinforcement Learning Formulation}
+\section{Reinforcement Learning Formulation}
 % - CPU Scheduling의 순차적 의사결정 문제 정의
 % - Deadline을 직접 관측할 수 없는 문제
 CPU Scheduling은 현재 실행할 Task의 선택이 이후의
@@ -174,7 +173,7 @@ Scheduling Decision 사이의 관계를 학습한다.
 이를 위해 CPU Scheduling 문제를 State, Action 및
 Reward로 구성된 Reinforcement Learning 문제로 정의한다.
 
-\subsubsection{State: Context-aware Representation}
+\subsection{State: Context-aware Representation}
 % - Kernel에서 관측 가능한 Runtime Feature
 % - 13D Task Feature 및 6D Global Feature
 % - 38D Derived Context Feature
@@ -313,7 +312,7 @@ Task 간 상대적인 관계를 함께 표현함으로써,
 학습할 수 있도록 설계되었다.
 
 
-\subsubsection{Action: Deadline-aware Priority Adjustment}
+\subsection{Action: Deadline-aware Priority Adjustment}
 % - RL Action 정의
 % - Learned Vruntime Adjustment
 % - Urgency-aware Vruntime 계산 공식 : Vruntime + Learned Vruntime Adjustment
@@ -364,7 +363,7 @@ Learned Vruntime Adjustment는 기존 Virtual Runtime의
 Accounting 값을 변경하지 않으며,
 Task Selection에만 사용된다.
 
-\subsubsection{Reward: Deadline-oriented Optimization}
+\subsection{Reward: Deadline-oriented Optimization}
 % - Reward function 전체 공식 설명
 % - Deadline Miss, Deadline Overrun, Request Latency 구성요소 설명 하면서 Deadline miss만 최적화 하면 안되는 이유 간단 설명.
 % - Reward Component별 Weight 및 Normalization
@@ -444,7 +443,7 @@ Scheduling Decision $t$부터 다음 Scheduling Decision까지
     \label{tab:reward_components}
 \end{table}
 
-\subsection{Lightweight Neural Policy Design}
+\section{Lightweight Neural Policy Design}
 % - Scheduling Performance와 Inference Cost의 Trade-off
 % - Teacher-Student 구조의 설계 목적
 % - Figure RL Teacher 와 Student network 구조그리기
@@ -481,7 +480,7 @@ Scheduling Decision $t$부터 다음 Scheduling Decision까지
     \label{fig:teacher_student_architecture}
 \end{figure}
 
-\subsubsection{RL Teacher Policy}
+\subsection{RL Teacher Policy}
 % - Teacher Neural Network Architecture
 % - Actor-Critic Architecture
 % - Context Encoding 및 Policy Output
@@ -592,7 +591,7 @@ Value Target 간의 오차를 최소화하도록 학습된다.
 학습한다.
 
 {\color{blue}왜 8D로 student를 줄였는지 근거 데이터}
-\subsubsection{Context-aware Student Policy}
+\subsection{Context-aware Student Policy}
 % - Neural Student Architecture
 % - Task Encoder, Set-context Pooling, Priority Head
 % - Nonlinear Feature Interaction
@@ -627,7 +626,7 @@ RL Teacher의 Actor 대비 Fully Connected Layer의
 추가적으로 INT8 Quantization을 적용하여
 Kernel 내부에서 Integer 기반의 Inference를 수행한다.
 
-\subsubsection{Teacher--Student Policy Distillation}
+\subsection{Teacher--Student Policy Distillation}
 % - Teacher와 Student의 Input/Output 관계
 % - Teacher Policy의 Knowledge Transfer
 % - Distillation Loss 공식

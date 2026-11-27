@@ -1,5 +1,5 @@
-\section{Implementation}
-\label{sec:implementation}
+{\color{blue} 초안 작성 v0.0}
+{\color{blue} In-kernel 에서의 동작 figure추가}
 
 RL-SchedExt는 Linux Server에서 Scheduling Policy를 학습하고,
 학습된 Neural Student를 Android Kernel에 배포하는 방식으로 구현하였다.
@@ -9,7 +9,7 @@ sched\_ext의 eBPF Scheduling Policy에서 Task Selection을 수행한다.
 이러한 역할 분리를 통해 Scheduling Hot Path에서 발생하는
 추가적인 연산 및 Kernel과 User Space 간의 통신을 최소화한다.
 
-\subsection{Offline Policy Training}
+\section{Offline Policy Training}
 
 Offline Policy Training은 Scheduling Simulator와 PyTorch를 기반으로
 두 단계로 수행된다.
@@ -39,10 +39,6 @@ Neural Student의 입력은 Android Kernel에서 구성할 수 있는
 즉, 동일한 Scheduling 상황과 Candidate Task Set에 대해
 각 Network에 대응하는 State Representation을 구성하고,
 Teacher의 출력과 Student의 출력을 비교하여 학습한다.
-% TODO: 현재 System Design의 공통 57D Teacher 가정 및
-% Teacher FC MAC 비교를 실제 Frozen Teacher(23D+6D)와 일치하도록 검토.
-% 최종 Teacher의 PPO Training Configuration 및 원본 FP32 Checkpoint는
-% 현재 확인한 Export 자료에 포함되어 있지 않으므로 수치를 임의 기재하지 않음.
 
 Candidate Task의 수가 Scheduling Decision마다 달라지므로,
 학습 시 최대 16개의 Candidate를 포함하는 Tensor로 State를 구성한다.
@@ -75,7 +71,7 @@ Validation Loss가 가장 낮은 Network Parameter를 최종 모델로 선정한
     \label{tab:student_training_config}
 \end{table}
 
-\subsection{Model Deployment}
+\section{Model Deployment}
 \label{sec:model_deployment}
 
 학습된 Neural Student를 Kernel 내부에서 실행하기 위해
@@ -143,7 +139,7 @@ Native Kernel과 eBPF Scheduling Policy 사이의
 ABI Version 및 Model Hash 일치 여부를 확인할 수 있도록
 Configuration을 구성한다.
 
-\subsection{In-Kernel Neural Policy Inference}
+\section{In-Kernel Neural Policy Inference}
 \label{sec:in_kernel_inference}
 
 RL-SchedExt는 Android 15의 Linux 6.1 Kernel에
@@ -154,7 +150,7 @@ Native Kernel Inference 및 eBPF Scheduling Decision의
 본 구현에서는 하나의 CPU Runqueue에 대한 Task Ordering에 집중하며,
 평가 환경에서는 CPU7의 Local Dispatch Queue (DSQ)를 사용한다.
 
-\subsubsection{Runtime State Collection}
+\subsection{Runtime State Collection}
 
 System Design에서 정의한 57차원 State를 구성하기 위해
 Native Kernel에서 Task별 Runtime History를 관리한다.
@@ -181,7 +177,7 @@ Feature 순서, Scaling 및 값의 범위를 유지하여
 이 과정에서 Application-level Deadline이나
 Request Completion 정보는 Runtime 입력으로 사용하지 않는다.
 
-\subsubsection{Student Neural Policy Inference}
+\subsection{Student Neural Policy Inference}
 
 Neural Student의 Forward Pass는 Native Kernel C로 구현하였다.
 eBPF Program 내부에서 Neural Network의 전체 연산을 수행하는 대신,
@@ -235,7 +231,7 @@ Nanosecond 단위의 Learned Vruntime Adjustment로 변환한다.
 계산된 값과 유효성 정보를 Candidate별 Scheduling Context에 기록하여
 eBPF Scheduling Policy에서 사용할 수 있도록 한다.
 
-\subsubsection{eBPF Scheduling Decision}
+\subsection{eBPF Scheduling Decision}
 
 sched\_ext의 Task Selection Callback은 Native Kernel에서 전달한
 Candidate별 Learned Vruntime Adjustment를 이용한다.
