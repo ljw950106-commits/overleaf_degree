@@ -195,82 +195,74 @@ Table~\ref{tab:state_features}는 각 Base Feature의
 
 \begin{table}[t]
     \centering
-    \caption{State representation of RL-SchedExt.}
-    \label{tab:state_features}
     \scriptsize
     \setlength{\tabcolsep}{3pt}
     \renewcommand{\arraystretch}{1.15}
-    \begin{tabular}{clp{0.45\columnwidth}}
-        \toprule
-        Dim. & Feature & Description \\
-        \midrule
-        \multicolumn{3}{c}{\textbf{Task Features (13D)}} \\
-        \midrule
+    \begin{tabular}{|c|l|p{0.45\columnwidth}|}
+        \hline
+        \textbf{Dim.} & \textbf{Feature} & \textbf{Description} \\ \hline
+        \multicolumn{3}{|c|}{\textbf{Task Features (13D)}} \\ \hline
         1 & Vruntime Lag
-          & Vruntime relative to the minimum \\
+          & Vruntime relative to the minimum \\ \hline
         1 & Log2 Weight
-          & Log-scaled relative scheduling weight \\
+          & Log-scaled relative scheduling weight \\ \hline
         1 & CPU Utilization
-          & EWMA of CPU execution ratio \\
+          & EWMA of CPU execution ratio \\ \hline
         1 & Runnable Ratio
-          & EWMA of runnable time ratio \\
+          & EWMA of runnable time ratio \\ \hline
         1 & Current Wait
-          & Current runnable waiting time \\
+          & Current runnable waiting time \\ \hline
         1 & Wait EWMA
-          & Historical average waiting time \\
+          & Historical average waiting time \\ \hline
         1 & Wakeup Rate
-          & Wakeup frequency \\
+          & Wakeup frequency \\ \hline
         1 & Time Since Last Run
-          & Elapsed time since last execution \\
+          & Elapsed time since last execution \\ \hline
         1 & Preemption Rate
-          & Preemption frequency \\
+          & Preemption frequency \\ \hline
         1 & Sleep/Block Rate
-          & Sleep or blocking frequency \\
+          & Sleep or blocking frequency \\ \hline
         1 & Time Since Quiescent
-          & Time since last inactive state \\
+          & Time since last inactive state \\ \hline
         1 & Wakeup CV
-          & Variability of wakeup intervals \\
+          & Variability of wakeup intervals \\ \hline
         1 & Service Debt
-          & CPU service deficit relative to fair share \\
-        \midrule
-        \multicolumn{3}{c}{\textbf{Global Features (6D)}} \\
-        \midrule
+          & CPU service deficit relative to fair share \\ \hline
+        \multicolumn{3}{|c|}{\textbf{Global Features (6D)}} \\ \hline
         1 & Runnable Count
-          & Number of runnable tasks \\
+          & Number of runnable tasks \\ \hline
         1 & Mean Wait
-          & Mean runnable waiting time \\
+          & Mean runnable waiting time \\ \hline
         1 & Max Wait
-          & Maximum runnable waiting time \\
+          & Maximum runnable waiting time \\ \hline
         1 & Vruntime Spread
-          & Range of runnable task vruntimes \\
+          & Range of runnable task vruntimes \\ \hline
         1 & CPU Utilization
-          & EWMA of CPU utilization \\
+          & EWMA of CPU utilization \\ \hline
         1 & Context Switch Rate
-          & Context switch frequency \\
-        \midrule
-        \multicolumn{3}{c}{\textbf{Derived Context Features (38D)}} \\
-        \midrule
+          & Context switch frequency \\ \hline
+        \multicolumn{3}{|c|}{\textbf{Derived Context Features (38D)}} \\ \hline
         5 & Relative Rank
-          & Relative feature ranks among runnable tasks \\
+          & Relative feature ranks among runnable tasks \\ \hline
         5 & Relative Difference
           & Feature gaps relative to other tasks
-            and aggregate values \\
+            and aggregate values \\ \hline
         6 & Task Set Statistics
-          & Aggregate statistics of runnable tasks \\
+          & Aggregate statistics of runnable tasks \\ \hline
         6 & Other Task Statistics
-          & Statistics excluding the current task \\
+          & Statistics excluding the current task \\ \hline
         5 & First CFS Candidate
-          & Features of the minimum-vruntime task \\
+          & Features of the minimum-vruntime task \\ \hline
         5 & First Candidate Difference
-          & Feature differences from the first candidate \\
+          & Feature differences from the first candidate \\ \hline
         3 & Second CFS Candidate
-          & Features of the second minimum-vruntime task \\
+          & Features of the second minimum-vruntime task \\ \hline
         3 & Second Candidate Difference
-          & Feature differences from the second candidate \\
-        \midrule
-        \textbf{57} & \multicolumn{2}{c}{\textbf{Total}} \\
-        \bottomrule
+          & Feature differences from the second candidate \\ \hline
+        \textbf{57} & \multicolumn{2}{|c|}{\textbf{Total}} \\ \hline
     \end{tabular}
+    \caption{State representation of RL-SchedExt.}
+    \label{tab:state_features}
 \end{table}
 
 Task Feature는 Task의 CPU 사용 이력, Wakeup Pattern, Runnable Waiting Time 및 CPU 자원 할당 상태를 표현한다.
@@ -447,44 +439,39 @@ Scheduling Decision $t$부터 다음 Scheduling Decision까지
 
 \begin{table}[t]
     \centering
+    \small
+    \setlength{\tabcolsep}{6pt}
+    \renewcommand{\arraystretch}{1.25}
+    \begin{tabularx}{\linewidth}{|>{\centering\arraybackslash}p{0.18\linewidth}|>{\centering\arraybackslash}X|>{\centering\arraybackslash}p{0.16\linewidth}|}
+        \hline
+        \textbf{Symbol} & \textbf{Reward Component} & \textbf{Weight} \\ \hline
+        \multicolumn{3}{|c|}{
+            \textbf{Primary Reward Components}} \\ \hline
+        $R_t^{\mathrm{req}}$
+            & Completed Request Reward & $+1.0$ \\ \hline
+        $M_j$
+            & Deadline Miss & $-3.0$ \\ \hline
+        $E_j$
+            & Deadline Overrun & $-1.5$ \\ \hline
+        $L_j$
+            & Request Latency & $-0.3$ \\ \hline
+        \multicolumn{3}{|c|}{
+            \textbf{Auxiliary Reward Components}} \\ \hline
+        $B_t$
+            & Background CPU Service (ms) & $+0.12$ \\ \hline
+        $W_t$
+            & Runnable Waiting Time (ms) & $-0.015$ \\ \hline
+        $U_t$
+            & Wakeup-to-run Latency (ms) & $-0.04$ \\ \hline
+        $O_t$
+            & Context Switch Overhead (ms) & $-0.12$ \\ \hline
+        $N_t$
+            & Context Switch Count & $-0.003$ \\ \hline
+        $R_t^{\mathrm{end}}$
+            & Unfinished Work Penalty & $+1.0$ \\ \hline
+    \end{tabularx}
     \caption{Reward components and their weights.}
     \label{tab:reward_components}
-    \scriptsize
-    \setlength{\tabcolsep}{3pt}
-    \renewcommand{\arraystretch}{1.15}
-    \begin{tabular}{clc}
-        \toprule
-        Symbol & Reward Component & Weight \\
-        \midrule
-        \multicolumn{3}{c}{
-            \textbf{Primary Reward Components}} \\
-        \midrule
-        $R_t^{\mathrm{req}}$
-            & Completed Request Reward & $+1.0$ \\
-        $M_j$
-            & Deadline Miss & $-3.0$ \\
-        $E_j$
-            & Deadline Overrun & $-1.5$ \\
-        $L_j$
-            & Request Latency & $-0.3$ \\
-        \midrule
-        \multicolumn{3}{c}{
-            \textbf{Auxiliary Reward Components}} \\
-        \midrule
-        $B_t$
-            & Background CPU Service (ms) & $+0.12$ \\
-        $W_t$
-            & Runnable Waiting Time (ms) & $-0.015$ \\
-        $U_t$
-            & Wakeup-to-run Latency (ms) & $-0.04$ \\
-        $O_t$
-            & Context Switch Overhead (ms) & $-0.12$ \\
-        $N_t$
-            & Context Switch Count & $-0.003$ \\
-        $R_t^{\mathrm{end}}$
-            & Unfinished Work Penalty & $+1.0$ \\
-        \bottomrule
-    \end{tabular}
 \end{table}
 
 \subsection{Lightweight Neural Policy Design}
