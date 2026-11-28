@@ -5,6 +5,7 @@
 % {\color{blue} A.비교군 / B.평가지표설명 / C.RL구조 / D.Sched\_Ext로 구성. }
 
 \section{Fair Scheduling and Virtual Runtime}
+\label{sec:background-fair-scheduling-and-virtual-runtime}
 
 Linux의 Completely Fair Scheduler(CFS)는 각 Task의 Scheduling
 Weight에 비례하여 CPU 자원을 분배하는 것을 목적으로 한다~\cite{cfs}.
@@ -41,6 +42,7 @@ Application Request의 시간적 제약과 반드시 일치하지 않는다.
 
 
 \section{Request-Level Deadlines and Task Dependencies}
+\label{sec:background-request-level-deadlines-and-task-dependencies}
 
 Task는 CPU Scheduler가 관리하는 실행 단위이며,
 Request는 Application이 완료해야 하는 작업 단위이다.
@@ -101,6 +103,7 @@ Remaining Deadline뿐만 아니라 Remaining CPU Demand, Task 간 Dependency 및
 
 
 \section{Extensible Scheduling with sched\_ext}
+\label{sec:background-extensible-scheduling-with-sched-ext}
 
 Linux 6.12에 도입된 sched\_ext는 eBPF Scheduling Program을 통해
 사용자 정의 CPU Scheduling Policy를 구현할 수 있도록
@@ -132,6 +135,7 @@ Scheduling Decision의 실행 비용을 함께 고려해야 한다.
 
 
 \section{Learning-based Scheduling Techniques}
+\label{sec:background-learning-based-scheduling-techniques}
 
 \paragraph{Reinforcement Learning (RL).}
 RL은 Agent가 Environment와 상호작용하면서 State에 따른

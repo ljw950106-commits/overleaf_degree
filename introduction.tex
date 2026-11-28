@@ -2,6 +2,7 @@
 
 % {\color{blue} CFS가 deadline urgency task 대신 다른 task 수행하는 사례 첨부하면 좋음}
 \section{Motivation and Challenges}
+\label{sec:intro-motivation-and-challenges}
 Modern Android 시스템에서는 Interactive Applications, Multimedia Processing, 백그라운드 연산 등 다양한 특성을 가진 Workload가 제한된 CPU 자원을 공유한다.
 특히 게임과 영상 스트리밍 등 멀티미디어 Application의 활용이 확대되면서, 사용자 경험(User Experience)은 Multimedia Processing에 관련된 개별 Request가 요구된 시간 안에 완료되는지에 더욱 민감해지고 있다.
 일부 Request가 Deadline을 초과하거나 완료 시간이 크게 지연되면, Frame Drop, 화면 끊김(Stuttering) 등이 발생할 수 있다~\cite{androidrender,zheng2024}.
@@ -32,6 +33,7 @@ Reinforcement Learning(RL)은 현재 Scheduling Decision이 이후의 Request Co
 \end{itemize}
 
 \section{RL-SchedExt Overview}
+\label{sec:intro-rl-schedext-overview}
 
 본 논문에서는 이러한 문제를 해결하기 위해 Simulator-based RL Training과 In-Kernel Neural Inference를 활용하는 CPU Scheduling Framework인 RL-SchedExt를 제안한다.
 핵심 아이디어는 Kernel에서 관측 가능한 Runtime State를 이용하여 각 Task의 상대적인 Scheduling Urgency를 추론하고, CFS 기반 Vruntime에 Learned Vruntime Adjustment를 반영한 Urgency-aware Vruntime으로 Task Ordering을 결정하는 것이다.
@@ -42,6 +44,7 @@ Reinforcement Learning(RL)은 현재 Scheduling Decision이 이후의 Request Co
 전체 학습 및 실행 구조는 Section~\ref{sec:design_overview}에서 설명한다.
 
 \section{Contributions}
+\label{sec:intro-contributions}
 
 RL-SchedExt를 Google Pixel 9 Pro XL의 실제 Android 15 환경에서 평가하였다.
 세 가지 Microbenchmark에서 RL-SchedExt는 CFS 대비 Deadline Miss Count를 19.4--26.8\%, Total Deadline Overrun을 4.5--19.3\% 감소시켰다. 또한 동일한 State와 Action을 사용하는 Linear Student와 비교했을 때 Neural Student가 더 높은 Deadline Compliance를 달성하였다.

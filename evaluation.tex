@@ -3,6 +3,7 @@
 % {\color{blue} 결과 쉽게 풀어쓰도록 수정}
 
 \section{Experiment Setup}
+\label{sec:eval-experiment-setup}
 RL-SchedExt는 Google Pixel 9 Pro XL (Google Tensor G4)의 AOSP Android 15
 (\texttt{android-15.0.0\_r36}) 환경에서 평가하였다. Linux 6.1 기반 Android
 Kernel에 Linux 6.12의 sched\_ext를 Backport하였으며, 해당 환경의 기본
@@ -31,7 +32,9 @@ Macrobenchmark에서는 실제 Android 게임의
 frame 출력 성능을 별도로 평가하였다.
 
 \section{Microbenchmark}
+\label{sec:eval-microbenchmark}
 \subsection{Workloads and Methodology}
+\label{sec:eval-workloads-and-methodology}
 Task Ordering의 성능을 평가하기 위해 CPU7에서 실행되는 세 가지 Workload를 사용하였다. 
 \begin{itemize}
     \item \textit{Mixed CPU Bursts}: 짧고 빈번한 Wakeup과 긴 CPU Burst를 가진 Task가 CPU 자원을 공유하는 상황을 구성한다.
@@ -56,6 +59,7 @@ Arrival Time부터 Completion Time까지의 지연 시간 분포의 99번째
 백분위수로, Tail Latency 특성을 나타낸다.
 
 \subsection{Deadline Compliance}
+\label{sec:eval-deadline-compliance}
 Figure~\ref{fig:sched-microbenchmark}(\subref{fig:sched-deadline})은 세 가지 Workload에서 측정한 실험군별
 Deadline Miss Count를 비교한다. Neural Student는 CFS 대비 Mixed CPU Bursts에서 19.4\%, Lock Dependency에서 26.8\%, Workload Transition에서 22.6\%의 Deadline Miss Count 감소를 보였다. 
 반면 Linear Student의 Deadline Miss Count 감소율은 동일한 Workload에서 각각 3.3\%, 7.3\%, 8.5\%로 상대적으로 작게 나타났다.
@@ -66,6 +70,7 @@ Deadline Miss Count를 비교한다. Neural Student는 CFS 대비 Mixed CPU Burs
 특히 Mutex를 사용하는 Task 간 의존성이 존재하는 Lock Dependency에서 가장 큰 상대적 개선이 관찰되었다.
 
 \subsection{Deadline Overrun and Tail Latency}
+\label{sec:eval-deadline-overrun-and-tail-latency}
 Figure~\ref{fig:sched-microbenchmark}(\subref{fig:sched-overrun})은 각 Workload에서 발생한 Total Deadline Overrun을 비교한다. 
 Neural Student는 CFS 대비 Mixed CPU Bursts에서 4.5\%, Lock Dependency에서 19.3\%, Workload Transition에서 5.1\%의 Total Deadline Overrun 감소를 기록하였다.
 
@@ -80,8 +85,10 @@ Neural Student는 모든 Request의 Completion Latency를 균일하게 줄이기
 이러한 trade-off가 실제 성능에 어떻게 나타나는지 확인하기 위해 다음에서 Deadline Budget별 Request Completion Latency를 분석한다.
 
 \section{Scheduling Policy Analysis}
+\label{sec:eval-scheduling-policy-analysis}
 
 \subsection{Latency Redistribution}
+\label{sec:eval-latency-redistribution}
 앞선 실험에서 Neural Student는 Deadline Compliance를 향상시켰으나,
 일부 Workload에서는 전체 Request Completion Latency p99가 증가하였다.
 이러한 Latency 증가가 Scheduling Urgency가 높은 Task에서 발생한 것인지,
@@ -119,6 +126,7 @@ Scheduling Urgency를 고려하여 Task Ordering을 조정함으로써
 Deadline Compliance를 향상시킨다.
 
 \subsection{Analysis of Learned Vruntime Adjustment}
+\label{sec:eval-analysis-of-learned-vruntime-adjustment}
 앞선 실험에서는 Neural Student가 Linear Student보다 높은
 Deadline Compliance를 달성하였다.
 이러한 성능 차이를 분석하고 Task Ordering에 비선형 모델이 필요한
@@ -178,7 +186,9 @@ Urgency를 Linear Student보다 효과적으로 추론함을 보여준다.
 비선형 모델을 사용하는 것이 효과적이다.
 
 \section{Macrobenchmark}
+\label{sec:eval-macrobenchmark}
 \subsection{Workload and Methodology}
+\label{sec:eval-workload-and-methodology}
 실제 Android Application에서의 End-to-End 성능을 평가하기 위해 오픈소스 게임 \textit{Mindustry}를 단독으로 실행하였다~\cite{mindustry}. Mindustry는 게임 로직 처리와 렌더링이 동시에 수행되는 Android 게임으로, 게임 진행 상태와 사용자 조작에 따라 CPU 부하가 달라질 수 있다.
 
 따라서 본 연구에서는 Scheduler 간 비교에서 Workload의 변동성을 최소화하기 위해 사전에 구성된 게임 저장 파일을 활용하였다. 60초 동안 Defense를 하는 시나리오를 수행하였으며, 게임의 시뮬레이션과 화면 갱신이 지속적으로 수행된다.
@@ -190,6 +200,7 @@ Mindustry와 같이 게임 로직과 렌더링이 지속적으로 수행되는 �
 
 
 \subsection{Gaming Performance}
+\label{sec:eval-gaming-performance}
 Figure~\ref{fig:mindustry-macro}는 Mindustry 실행 환경에서 CFS와 RL-SchedExt의 Average FPS 및 Frame Interval을 비교한 결과이다. RL-SchedExt는 Average FPS 29.62를 기록하여 CFS의 26.47 대비 11.9\% 높은 성능을 보였다. 이는 동일한 게임 시나리오에서 단위 시간당 더 많은 프레임을 출력함으로써 게임의 전반적인 화면 갱신 성능을 향상시켰음을 의미한다.
 
 \begin{figure}[H]
