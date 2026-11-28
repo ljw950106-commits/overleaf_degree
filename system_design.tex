@@ -17,12 +17,12 @@ Runtime Inference는 Android Kernel 내부에서 수행된다.
 
 \begin{figure}[H]
     \centering
-    \IfFileExists{Figures/System_overview.png}{%
-        \includegraphics[width=\linewidth,keepaspectratio]{Figures/System_overview.png}%
+    \IfFileExists{Figures/fig3_1_system_overview.png}{%
+        \includegraphics[width=\linewidth,keepaspectratio]{Figures/fig3_1_system_overview.png}%
     }{%
         \fbox{\parbox[c][0.50\linewidth][c]{0.94\linewidth}{%
             \centering System Overview Figure\\
-            Upload \texttt{Figures/System\_overview.png} to display the figure.}}%
+            Upload \texttt{Figures/fig3\_1\_system\_overview.png} to display the figure.}}%
     }
     \caption{RL-SchedExt의 전체 System Architecture.
     Linux Server에서 RL Teacher Training과 Knowledge Distillation을 통해
@@ -528,7 +528,7 @@ Figure~\ref{fig:teacher_student_architecture}는 RL Teacher Training과 Knowledg
         \includegraphics[
             width=\linewidth,
             keepaspectratio
-        ]{Figures/ActorCritic.png}
+        ]{Figures/fig3_2_a_rl_teacher_training.png}
         \caption{Phase 1: RL Teacher Training}
         \label{fig:actor_critic}
     \end{subfigure}
@@ -539,7 +539,7 @@ Figure~\ref{fig:teacher_student_architecture}는 RL Teacher Training과 Knowledg
         \includegraphics[
             width=\linewidth,
             keepaspectratio
-        ]{Figures/TeacherStudent.png}
+        ]{Figures/fig3_2_b_knowledge_distillation.png}
         \caption{Phase 2: Knowledge Distillation}
         \label{fig:teacher_student}
     \end{subfigure}

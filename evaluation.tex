@@ -60,7 +60,7 @@ Figure~\ref{fig:sched-microbenchmark}(\subref{fig:sched-deadline})은 세 가지
 Deadline Miss Count를 비교한다. Neural Student는 CFS 대비 Mixed CPU Bursts에서 19.4\%, Lock Dependency에서 26.8\%, Workload Transition에서 22.6\%의 Deadline Miss Count 감소를 보였다. 
 반면 Linear Student의 Deadline Miss Count 감소율은 동일한 Workload에서 각각 3.3\%, 7.3\%, 8.5\%로 상대적으로 작게 나타났다.
 
-\input{plot/rlsched_figures.tex}
+\input{plot/fig5_1_microbenchmark.tex}
 
 이러한 결과는 Neural Student가 평가한 세 가지 Workload 모두에서 Linear Student 및 CFS보다 낮은 Deadline Miss Count를 달성했음을 보여준다. 
 특히 Mutex를 사용하는 Task 간 의존성이 존재하는 Lock Dependency에서 가장 큰 상대적 개선이 관찰되었다.
@@ -105,8 +105,8 @@ Neural Student는 4--6\,ms 구간에서도 p99를 18.9\% 감소시켰으나,
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.50\linewidth]{Figures/fig2_legend.png}\par\smallskip
-    \includegraphics[width=0.65\linewidth]{Figures/fig2_d_mixed_p99_change.png}
+    \includegraphics[width=0.50\linewidth]{Figures/fig5_2_legend.png}\par\smallskip
+    \includegraphics[width=0.65\linewidth]{Figures/fig5_2_mixed_p99_change.png}
     \caption{Mixed CPU Bursts에서 초기 Deadline Budget에 따른 Request Completion Latency p99의 변화율. 전체 100회의 측정 결과를 사용하였다. 점선은 CFS 기준값(0\%)을 나타내며, 오차 막대는 Bootstrap 95\% 신뢰구간을 나타낸다. 음의 변화율은 Latency 감소를 의미한다.}
     \label{fig:bimodal-p99-budget}
 \end{figure}
@@ -155,7 +155,7 @@ Task Selection 방식을 변경하지 않는다.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.82\linewidth]{Figures/fig3_deadline_adjustment.png}
+  \includegraphics[width=0.82\linewidth]{Figures/fig5_3_deadline_adjustment.png}
   \caption{Remaining Deadline에 따른 Relative Learned Vruntime Adjustment.
   실선은 반복 실험 전체의 평균, 음영은 평균 $\pm$ 1 Standard Deviation,
   오차 막대는 95\% 신뢰구간을 나타낸다.}
@@ -194,18 +194,18 @@ Figure~\ref{fig:mindustry-macro}는 Mindustry 실행 환경에서 CFS와 RL-Sche
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.40\linewidth]{Figures/fig4_legend.png}\par\smallskip
+  \includegraphics[width=0.40\linewidth]{Figures/fig5_4_legend.png}\par\smallskip
   \captionsetup[subfigure]{skip=2pt}
   \begin{subfigure}[b]{0.39\linewidth}
     \centering
-    \includegraphics[width=\linewidth]{Figures/fig4_a_average_fps.png}
+    \includegraphics[width=\linewidth]{Figures/fig5_4_a_average_fps.png}
     \subcaption{Average FPS ($\uparrow$)}
     \label{fig:mindustry-fps}
   \end{subfigure}
   \hspace{2pt}%
   \begin{subfigure}[b]{0.575\linewidth}
     \centering
-    \includegraphics[width=\linewidth]{Figures/fig4_b_frame_interval.png}
+    \includegraphics[width=\linewidth]{Figures/fig5_4_b_frame_interval.png}
     \subcaption{Frame Interval ($\downarrow$)}
     \label{fig:mindustry-interval}
   \end{subfigure}
